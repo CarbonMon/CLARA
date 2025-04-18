@@ -71,17 +71,44 @@ CLARA is a powerful Flask web application designed to help researchers, clinicia
    - **Windows**: Download and install from [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
 
 5. Set environment variables (optional but recommended):
-   ```bash
-   # For Unix/Linux/macOS
-   export SECRET_KEY="your-secret-key"
-   export NCBI_EMAIL="your-email@example.com"
-   export NCBI_API_KEY="your-ncbi-api-key"
-   
-   # For Windows
-   set SECRET_KEY=your-secret-key
-   set NCBI_EMAIL=your-email@example.com
-   set NCBI_API_KEY=your-ncbi-api-key
-   ```
+
+    **For Unix/Linux/macOS:**
+    ```bash
+    export SECRET_KEY="your-secret-key"
+    export NCBI_EMAIL="your-email@example.com"
+    export NCBI_API_KEY="your-ncbi-api-key"
+    ```
+  
+    **For Windows:**
+    ```cmd
+    set SECRET_KEY=your-secret-key
+    set NCBI_EMAIL=your-email@example.com
+    set NCBI_API_KEY=your-ncbi-api-key
+    ```
+  
+    **For GitHub Codespaces:**
+    
+    1. Go to your GitHub repository
+    2. Click on "Settings" > "Secrets and variables" > "Codespaces"
+    3. Click "New repository secret" for each variable:
+       - Name: `SECRET_KEY`, Value: your-secret-key
+       - Name: `NCBI_EMAIL`, Value: your-email@example.com
+       - Name: `NCBI_API_KEY`, Value: your-ncbi-api-key
+  
+    **Alternatively, you can add these to your `.devcontainer/devcontainer.json` file:**
+    ```json
+    {
+      "name": "Your Dev Container",
+      "remoteEnv": {
+        "SECRET_KEY": "your-secret-key",
+        "NCBI_EMAIL": "your-email@example.com",
+        "NCBI_API_KEY": "your-ncbi-api-key"
+      }
+    }
+    ```
+
+Note: For sensitive values, using GitHub Secrets is more secure than hardcoding them in your devcontainer.json file.
+
 
 ### Running the Application
 
