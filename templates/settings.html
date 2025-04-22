@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}API Settings - Clinical Research Analysis Tool{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0"><i class="fas fa-key me-2"></i>API Settings</h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">Configure your API credentials to use with the analysis tools.</p>
+                
+                {% if session.get('api_key_valid') %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>{{ session.get('api_provider')|capitalize }} API is configured and validated!</strong>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please configure your API settings to use the analysis tools
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('main.settings') }}">
+                    {{ form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.api_provider.label }}</label>
+                        {{ form.api_provider(class="form-select") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.api_key.label }}</label>
+                        {{ form.api_key(class="form-control", placeholder="Enter your API key") }}
+                        <div class="form-text">
+                            Your API key is stored securely in your session and is not persisted on the server.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.model.label }}</label>
+                        {{ form.model(class="form-select") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h4>API Information</h4>
+                    <div class="accordion" id="apiInfoAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="openaiHeading">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#openaiInfo" aria-expanded="false" aria-controls="openaiInfo">
+                                    OpenAI API
+                                </button>
+                            </h2>
+                            <div id="openaiInfo" class="accordion-collapse collapse" aria-labelledby="openaiHeading" data-bs-parent="#apiInfoAccordion">
+                                <div class="accordion-body">
+                                    <p>To use OpenAI models, you need an API key from OpenAI.</p>
+                                    <p>You can get an API key by signing up at <a href="https://platform.openai.com/signup" target="_blank">platform.openai.com</a>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="anthropicHeading">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#anthropicInfo" aria-expanded="false" aria-controls="anthropicInfo">
+                                    Anthropic API
+                                </button>
+                            </h2>
+                            <div id="anthropicInfo" class="accordion-collapse collapse" aria-labelledby="anthropicHeading" data-bs-parent="#apiInfoAccordion">
+                                <div class="accordion-body">
+                                    <p>To use Claude models, you need an API key from Anthropic.</p>
+                                    <p>You can get an API key by signing up at <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Update model options when provider changes
+        $('#api_provider').change(function() {
+            let provider = $(this).val();
+            let modelSelect = $('#model');
+            
+            // Clear current options
+            modelSelect.empty();
+            
+            if (provider === 'openai') {
+                // Add OpenAI models
+                modelSelect.append(new Option('GPT-4o', 'gpt-4o'));
+                modelSelect.append(new Option('GPT-4 Turbo', 'gpt-4-turbo'));
+                modelSelect.append(new Option('GPT-3.5 Turbo', 'gpt-3.5-turbo'));
+                
+                // Set default
+                modelSelect.val('gpt-4o');
+            } else {
+                // Add Claude models
+                modelSelect.append(new Option('Claude 3 Opus', 'claude-3-opus-20240229'));
+                modelSelect.append(new Option('Claude 3 Sonnet', 'claude-3-sonnet-20240229'));
+                modelSelect.append(new Option('Claude 3 Haiku', 'claude-3-haiku-20240307'));
+                
+                // Set default
+                modelSelect.val('claude-3-sonnet-20240229');
+            }
+        });
+    });
+</script>
+{% endblock %}
