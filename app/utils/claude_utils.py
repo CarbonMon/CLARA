@@ -1,8 +1,10 @@
 # claude connection with prompts
 import json
+import re
 from anthropic import Anthropic
 from typing import Dict, Any, Optional
 import logging
+from app.utils.prompts import get_base_analysis_prompt, get_pdf_prompt_addition, get_claude_specific_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -12,43 +14,37 @@ def create_claude_client(api_key: str) -> Anthropic:
 
 def get_analysis_prompt(is_pdf: bool = False) -> str:
     """Get the system prompt for paper analysis"""
-    system_prompt = """
-    You are a bot speaking with another program that takes JSON formatted text as an input. Only return results in JSON format, with NO PREAMBLE.
-    The user will input the results from a PubMed search or a full-text clinical trial PDF. Your job is to extract the exact information to return:
-      'Title': The complete article title
-      'PMID': The Pubmed ID of the article (if available, otherwise 'NA')
-      'Full Text Link' : If available, the DOI URL, otherwise, NA
-      'Subject of Study': The type of subject in the study. Human, Animal, In-Vitro, Other
-      'Disease State': Disease state studied, if any, or if the study is done on a healthy population. leave blank if disease state or healthy patients is not mentioned explicitly. "Healthy patients" if patients are explicitly mentioned to be healthy.
-      'Number of Subjects Studied': If human, the total study population. Otherwise, leave blank. This field needs to be an integer or empty.
-      'Type of Study': Type of study done. 'RCT' for randomized controlled trial, '1. Meta-analysis','2. Systematic Review','3. Cohort Study', or '4. Other'. If it is '5. Other', append a short description
-      'Study Design': Brief and succinct details about study design, if applicable
-      'Intervention': Intervention(s) studied, if any. Intervention is the treatment applied to the group.
-      'Intervention Dose': Go in detail here about the intervention's doses and treatment duration if available.
-      'Intervention Dosage Form': A brief description of the dosage form - ie. oral, topical, intranasal, if available.
-      'Control': Control or comarators, if any
-      'Primary Endpoint': What the primary endpoint of the study was, if available. Include how it was measured too if available.
-      'Primary Endpoint Result': The measurement for the primary endpoints
-      'Secondary Endpoints' If available
-      'Safety Endpoints' If available
-      'Results Available': Yes or No
-      'Primary Endpoint Met': Summarize from results whether or not the primary endpoint(s) was met: Yes or No or NA if results unavailable
-      'Statistical Significance': alpha-level and p-value for primary endpoint(s), if available
-      'Clinical Significance': Effect size, and Number needed to treat (NNT)/Number needed to harm (NNH), if available
-      'Conclusion': Brief summary of the conclusions of the paper
-      'Main Author': Last name, First initials
-      'Other Authors': Last name, First initials; Last name First initials; ...
-      'Journal Name': Full journal name
-      'Date of Publication': YYYY-MM-DD
-      'Error': Error description, if any. Otherwise, leave emtpy
-    """
-
+    system_prompt = get_base_analysis_prompt() + get_claude_specific_instructions()
+    
     if is_pdf:
-        system_prompt += """
-        Note: This is a full-text PDF of a clinical trial. Extract as much detail as possible from the full text.
-        """
+        system_prompt += get_pdf_prompt_addition()
 
     return system_prompt
+
+def extract_json_from_text(text: str) -> str:
+    """
+    Extract JSON object from text, handling various formatting issues
+    """
+    # If text is empty, return a minimal valid JSON
+    if not text or text.isspace():
+        return '{}'
+        
+    # Try to find JSON between triple backticks
+    json_match = re.search(r'```(?:json)?\s*({[\s\S]*?})\s*```', text, re.MULTILINE)
+    if json_match:
+        return json_match.group(1).strip()
+        
+    # Try to find anything that looks like a JSON object (starts with { and ends with })
+    json_match = re.search(r'({[\s\S]*?})', text, re.MULTILINE)
+    if json_match:
+        return json_match.group(1).strip()
+    
+    # If no JSON found, return the text itself if it might be JSON
+    if text.strip().startswith('{') and text.strip().endswith('}'):
+        return text.strip()
+    
+    # As a last resort, create a minimal JSON with error
+    return '{"Error": "Could not extract valid JSON from model response", "Title": "Error Processing Document"}'
 
 def analyze_paper_with_claude(
     client: Anthropic, 
@@ -71,6 +67,11 @@ def analyze_paper_with_claude(
     try:
         system_prompt = get_analysis_prompt(is_pdf)
         
+        # Add explicit JSON instructions to the user content
+        user_content = str(paper_content)
+        if len(user_content) > 100000:  # If content is very long, truncate it
+            user_content = user_content[:100000] + "\n\n[Content truncated due to length]"
+        
         message = client.messages.create(
             model=model,
             system=system_prompt,
@@ -78,13 +79,35 @@ def analyze_paper_with_claude(
             messages=[
                 {
                     "role": "user",
-                    "content": str(paper_content)
+                    "content": user_content
                 }
             ]
         )
 
-        cleaned_str = message.content[0].text.replace("```json", "").replace("```", "").strip()
-        return json.loads(cleaned_str)
+        # Extract response text
+        response_text = message.content[0].text if message.content else ""
+        
+        # Process and clean the response to extract JSON
+        cleaned_str = extract_json_from_text(response_text)
+        
+        try:
+            # Try to parse the JSON
+            result = json.loads(cleaned_str)
+            return result
+        except json.JSONDecodeError as e:
+            # If parsing fails, return an error object
+            logger.error(f"Failed to parse Claude response as JSON: {e}")
+            logger.error(f"Response text: {response_text[:500]}...")
+            
+            return {
+                "Title": "Error parsing model response",
+                "Error": f"Could not parse response as JSON: {str(e)}",
+                "Raw Response": response_text[:500] + "..." if len(response_text) > 500 else response_text
+            }
+            
     except Exception as e:
         logger.error(f"Error analyzing paper with Claude: {e}")
-        raise
+        return {
+            "Title": "Error analyzing document",
+            "Error": str(e)
+        }
