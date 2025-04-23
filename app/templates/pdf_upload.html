@@ -10,7 +10,7 @@
     <div class="card-body">
         <p class="lead">Upload PDF documents containing clinical trial information for AI analysis.</p>
         
-        <form method="POST" action="{{ url_for('main.pdf_upload') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ url_for('main.pdf_upload') }}" enctype="multipart/form-data" id="uploadForm">
             {{ form.csrf_token }}
             
             <div class="mb-4">
@@ -19,9 +19,11 @@
                     <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
                     <p class="mb-0">Drag and drop files here or click to browse</p>
                     <small class="text-muted d-block mt-2">Supported formats: PDF, PNG, JPG</small>
-                    {{ form.files(class="d-none", id="file-input") }}
                 </div>
-                <div id="file-list" class="mt-3"></div>
+                {{ form.files(id="file-input", style="position: absolute; left: -9999px;") }}
+                <div id="file-list" class="mt-3">
+                    <!-- Selected files will appear here -->
+                </div>
                 {% if form.files.errors %}
                 <div class="invalid-feedback d-block mt-2">
                     {% for error in form.files.errors %}
@@ -83,6 +85,10 @@
         const submitBtn = $('#submit-btn');
         const ocrCheckbox = $('#use_ocr');
         const languageSelector = $('#language-selector');
+        const uploadForm = $('#uploadForm');
+        
+        // Store the DataTransfer object for managing files
+        const dataTransfer = new DataTransfer();
         
         // Toggle language selector based on OCR checkbox
         ocrCheckbox.on('change', function() {
@@ -93,7 +99,7 @@
             }
         });
         
-        // Handle file dropzone click
+        // Handle file dropzone click - open file dialog
         dropzone.on('click', function(e) {
             fileInput.click();
         });
@@ -114,13 +120,36 @@
             dropzone.removeClass('dragover');
             
             if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files.length) {
-                fileInput[0].files = e.originalEvent.dataTransfer.files;
+                // Add new files to our collection
+                const newFiles = e.originalEvent.dataTransfer.files;
+                for (let i = 0; i < newFiles.length; i++) {
+                    // Check if it's a valid file type
+                    const fileType = newFiles[i].type;
+                    if (fileType === 'application/pdf' || fileType.startsWith('image/')) {
+                        dataTransfer.items.add(newFiles[i]);
+                    }
+                }
+                
+                // Update the file input with all files
+                fileInput[0].files = dataTransfer.files;
                 updateFileList();
             }
         });
         
-        // Handle file selection
-        fileInput.on('change', function() {
+        // Handle file selection via file dialog
+        fileInput.on('change', function(e) {
+            // Add new files to our collection
+            const newFiles = e.target.files;
+            for (let i = 0; i < newFiles.length; i++) {
+                // Check if it's a valid file type
+                const fileType = newFiles[i].type;
+                if (fileType === 'application/pdf' || fileType.startsWith('image/')) {
+                    dataTransfer.items.add(newFiles[i]);
+                }
+            }
+            
+            // Update the file input with all files
+            fileInput[0].files = dataTransfer.files;
             updateFileList();
         });
         
@@ -140,6 +169,7 @@
                     const file = files[i];
                     const fileSize = formatFileSize(file.size);
                     const fileType = file.type.split('/')[1].toUpperCase();
+                    const fileIndex = i;
                     
                     const listItem = `
                         <div class="list-group-item d-flex justify-content-between align-items-center">
@@ -147,9 +177,12 @@
                                 <i class="fas fa-file-pdf text-danger me-2"></i>
                                 <span>${file.name}</span>
                             </div>
-                            <div>
+                            <div class="d-flex align-items-center">
                                 <span class="badge bg-secondary me-2">${fileType}</span>
-                                <span class="badge bg-info">${fileSize}</span>
+                                <span class="badge bg-info me-3">${fileSize}</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${fileIndex}">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -158,10 +191,41 @@
                 }
                 
                 fileList.append(listGroup);
+                
+                // Set up remove buttons
+                $('.remove-file').on('click', function() {
+                    const index = $(this).data('index');
+                    removeFile(index);
+                });
             } else {
                 // Disable submit button if no files
                 submitBtn.prop('disabled', true);
             }
+        }
+        
+        // Remove a file from the list
+        function removeFile(index) {
+            // Create a new DataTransfer object
+            const newDataTransfer = new DataTransfer();
+            
+            // Add all files except the one to remove
+            for (let i = 0; i < dataTransfer.files.length; i++) {
+                if (i !== index) {
+                    newDataTransfer.items.add(dataTransfer.files[i]);
+                }
+            }
+            
+            // Update our dataTransfer object
+            dataTransfer.items.clear();
+            for (let i = 0; i < newDataTransfer.files.length; i++) {
+                dataTransfer.items.add(newDataTransfer.files[i]);
+            }
+            
+            // Update the file input
+            fileInput[0].files = dataTransfer.files;
+            
+            // Update the display
+            updateFileList();
         }
         
         // Format file size

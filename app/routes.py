@@ -82,6 +82,22 @@ def pubmed_search():
     
     return render_template('pubmed_search.html', form=form)
 
+@bp.route('/analyze-pubmed')
+def analyze_pubmed():
+    # Check if the necessary session variables are set
+    if not all(k in session for k in ['query', 'max_results', 'api_provider', 'api_key', 'model']):
+        flash('Missing required parameters', 'danger')
+        return redirect(url_for('main.pubmed_search'))
+    
+    # Store analysis job in session
+    session['analysis_type'] = 'pubmed'
+    session['analysis_status'] = 'pending'
+    
+    return render_template('results.html', 
+                          analysis_type='pubmed',
+                          query=session.get('query'),
+                          max_results=session.get('max_results'))
+
 @bp.route('/pdf-upload', methods=['GET', 'POST'])
 def pdf_upload():
     # Redirect to settings if API key is not configured
@@ -100,10 +116,11 @@ def pdf_upload():
         
         for file in uploaded_files:
             if file.filename:
-                # Save file temporarily
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
+                # Generate a secure filename to avoid conflicts
+                secure_name = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}"
+                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_name)
                 file.save(file_path)
-                filenames.append(file_path)
+                filenames.append({'path': file_path, 'name': file.filename})
         
         # Store parameters in session
         session['pdf_files'] = filenames
@@ -114,22 +131,6 @@ def pdf_upload():
         return redirect(url_for('main.analyze_pdf'))
     
     return render_template('pdf_upload.html', form=form)
-
-@bp.route('/analyze-pubmed')
-def analyze_pubmed():
-    # Check if the necessary session variables are set
-    if not all(k in session for k in ['query', 'max_results', 'api_provider', 'api_key', 'model']):
-        flash('Missing required parameters', 'danger')
-        return redirect(url_for('main.pubmed_search'))
-    
-    # Store analysis job in session
-    session['analysis_type'] = 'pubmed'
-    session['analysis_status'] = 'pending'
-    
-    return render_template('results.html', 
-                          analysis_type='pubmed',
-                          query=session.get('query'),
-                          max_results=session.get('max_results'))
 
 @bp.route('/analyze-pdf')
 def analyze_pdf():
@@ -142,7 +143,7 @@ def analyze_pdf():
     session['analysis_type'] = 'pdf'
     session['analysis_status'] = 'pending'
     
-    pdf_filenames = [os.path.basename(f) for f in session.get('pdf_files', [])]
+    pdf_filenames = [f['name'] for f in session.get('pdf_files', [])]
     
     return render_template('results.html', 
                           analysis_type='pdf',
@@ -187,15 +188,8 @@ def start_analysis():
             )
             
         elif analysis_type == 'pdf':
-            # Prepare PDF files
-            pdf_files = []
-            for filepath in session.get('pdf_files', []):
-                with open(filepath, 'rb') as f:
-                    # Create file-like object with name attribute
-                    file_obj = type('', (), {})()
-                    file_obj.read = lambda: f.read()
-                    file_obj.name = os.path.basename(filepath)
-                    pdf_files.append(file_obj)
+            # Get PDF files from session
+            pdf_files = session.get('pdf_files', [])
             
             # Start PDF analysis
             results = analysis_service.analyze_pdf_files(
@@ -276,5 +270,114 @@ def clear_results():
     session.pop('pdf_files', None)
     session.pop('use_ocr', None)
     session.pop('language', None)
+    
+    return jsonify({'status': 'success'})
+
+@bp.route('/download-pdf-text/<int:index>')
+def download_pdf_text(index):
+    """Download extracted text from a PDF file"""
+    pdf_files = session.get('pdf_files', [])
+    
+    if index < 0 or index >= len(pdf_files):
+        flash('Invalid PDF index', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Get the file info
+    file_info = pdf_files[index]
+    
+    # Get analysis results to find the text
+    results = session.get('analysis_results', [])
+    
+    # Try to find matching result
+    text_content = "No text content available"
+    for result in results:
+        if result.get('Filename') == file_info['name']:
+            # Create a text summary from the analysis results
+            text_content = f"# Analysis of {file_info['name']}\n\n"
+            for key, value in result.items():
+                if key != 'Filename' and value:
+                    text_content += f"## {key}\n{value}\n\n"
+            break
+    
+    # If no matching result found, try to extract the text directly
+    if text_content == "No text content available":
+        try:
+            from app.utils.pdf_utils import process_file
+            processed = process_file(
+                file_info,
+                session.get('use_ocr', False),
+                session.get('language', 'eng')
+            )
+            text_content = processed.get('content', "No text content available")
+        except Exception as e:
+            text_content = f"Error extracting text: {str(e)}"
+    
+    # Create text file
+    text_file = io.BytesIO(text_content.encode('utf-8'))
+    
+    return send_file(
+        text_file,
+        as_attachment=True,
+        download_name=f"{file_info['name']}.txt",
+        mimetype='text/plain'
+    )
+
+@bp.route('/api/selected-results', methods=['POST'])
+def selected_results():
+    """API endpoint to get selected results for download"""
+    data = request.json
+    if not data or 'indices' not in data:
+        return jsonify({'status': 'error', 'message': 'No indices provided'}), 400
+    
+    results = session.get('analysis_results', [])
+    selected_indices = data['indices']
+    
+    selected_results = [results[i] for i in selected_indices if i < len(results)]
+    
+    if not selected_results:
+        return jsonify({'status': 'error', 'message': 'No valid results selected'}), 400
+    
+    # Store selected results in session
+    session['selected_results'] = selected_results
+    
+    return jsonify({'status': 'success', 'count': len(selected_results)})
+
+@bp.route('/download-selected-excel')
+def download_selected_excel():
+    """Download selected results as Excel file"""
+    results = session.get('selected_results', [])
+    
+    if not results:
+        flash('No results selected for download', 'warning')
+        return redirect(url_for('main.index'))
+    
+    # Generate filename
+    filename = f"Selected_Results_{datetime.now().strftime('%y%m%d')}.xlsx"
+    
+    # Create Excel file
+    excel_file = create_excel_file(results, filename)
+    
+    return send_file(
+        excel_file,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+@bp.route('/cleanup-temp-files', methods=['POST'])
+def cleanup_temp_files():
+    """Clean up temporary files after analysis is complete"""
+    pdf_files = session.get('pdf_files', [])
+    
+    for file_info in pdf_files:
+        try:
+            if os.path.exists(file_info['path']):
+                os.remove(file_info['path'])
+        except Exception as e:
+            # Log error but continue
+            current_app.logger.error(f"Error deleting file {file_info['path']}: {e}")
+    
+    # Clear the files from session
+    session.pop('pdf_files', None)
     
     return jsonify({'status': 'success'})

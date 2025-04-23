@@ -3,6 +3,41 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Flask instance folder
+instance/
+flask_session/
+app/uploads
+
+# Distribution / packaging
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Log files and databases
+*.log
+*.db
+
+# OS or Editor related files
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
 # C extensions
 *.so
 
