@@ -110,16 +110,16 @@ class AnalysisService:
                         is_pdf=True,
                         model=self.model
                     )
-                # Add filename to result
-                result['Filename'] = pdf_file.name
+                # Add filename to result - use dictionary access
+                result['Filename'] = pdf_file['name']
                 results.append(result)
             
             except Exception as e:
                 logger.error(f"Error processing PDF: {e}")
-                # Add error record
+                # Add error record with safer access pattern
                 results.append({
-                    "Title": f"Error processing {pdf_file.name}",
-                    "Filename": pdf_file.name,
+                    "Title": f"Error processing {pdf_file['name'] if isinstance(pdf_file, dict) else 'document'}",
+                    "Filename": pdf_file['name'] if isinstance(pdf_file, dict) else "Unknown",
                     "Error": str(e)
                 })
         

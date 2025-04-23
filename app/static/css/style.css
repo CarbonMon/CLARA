@@ -82,6 +82,56 @@ body {
     padding: 1rem 0;
 }
 
+.dataTables_scrollBody {
+    min-height: 400px;
+}
+
+/* Table resizing styles */
+.table-resizable th {
+    position: relative;
+    overflow: hidden;
+}
+
+.resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.05);
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+    z-index: 10;
+}
+
+.resizer:hover,
+.resizing {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Column filter styling */
+.column-filter {
+    width: 100%;
+    padding: 5px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Selection tools styling */
+.selection-toolbar {
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e5e5e5;
+}
+
+.selected-count {
+    font-weight: bold;
+}
+
 /* Animation */
 .fade-in {
     animation: fadeIn 0.5s;
@@ -105,4 +155,49 @@ footer {
     .card-body {
         padding: 1rem;
     }
+    
+    /* Handle table on small screens */
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* DataTables-specific styles */
+.dataTables_wrapper .dataTables_length select {
+    min-width: 70px;
+    padding-right: 25px !important;
+}
+
+/* Table resizing styles */
+.table-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 10; 
+    background-color: transparent;
+}
+
+.table-resizer:hover,
+.table-resizer.resizing {
+    background-color: #0d6efd;
+    opacity: 0.5;
+}
+
+/* Fix for DataTables scrolling */
+.dataTables_scrollBody {
+    min-height: 300px;
+}
+
+/* Make sure the table takes full width */
+.table {
+    width: 100% !important;
+}
+
+/* Column size defaults */
+.table th {
+    min-width: 100px;
 }

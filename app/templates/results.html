@@ -2,15 +2,103 @@
 
 {% block title %}Analysis Results{% endblock %}
 
+{% block head %}
+<!-- DataTables and extensions CSS -->
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/select/1.6.2/css/select.dataTables.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
+
+<style>
+    /* Custom styling for DataTables */
+    .dataTables_wrapper {
+        padding: 0;
+        width: 100%;
+    }
+    
+    /* Fix length menu dropdown */
+    .dataTables_length select {
+        min-width: 70px;
+        padding-right: 25px !important;
+    }
+    
+    /* Scrollable table container */
+    .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+    }
+    
+    /* Column resizer styles */
+    .table th {
+        position: relative;
+        min-width: 100px; /* Minimum column width */
+    }
+    
+    .table-resizer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 1;
+        background-color: transparent;
+    }
+    
+    .table-resizer:hover, 
+    .table-resizer.resizing {
+        background-color: #0d6efd;
+        opacity: 0.5;
+    }
+    
+    /* Column filter inputs */
+    .column-filter {
+        width: 100%;
+        padding: 6px;
+        margin-top: 5px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    
+    /* Selection toolbar */
+    #selectionToolbar {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    /* First column (checkbox) width */
+    #resultsTable th:first-child,
+    #resultsTable td:first-child {
+        width: 40px;
+        max-width: 40px;
+    }
+    
+    /* Last column (actions) width */
+    #resultsTable th:last-child,
+    #resultsTable td:last-child {
+        width: 60px;
+        max-width: 60px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card shadow">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h2 class="mb-0">
             <i class="fas fa-chart-bar me-2"></i>Analysis Results
+            {% if session.get('analysis_timestamp') %}
+            <small class="text-light">{{ session.get('analysis_timestamp') }}</small>
+            {% endif %}
         </h2>
         <div>
-            <button id="downloadBtn" class="btn btn-light" disabled>
-                <i class="fas fa-download me-1"></i> Download Excel
+            <button id="downloadAllBtn" class="btn btn-light" {% if not session.get('analysis_results') %}disabled{% endif %}>
+                <i class="fas fa-download me-1"></i> Download All
+            </button>
+            <button id="downloadSelectedBtn" class="btn btn-outline-light ms-2" disabled>
+                <i class="fas fa-file-export me-1"></i> Download Selected
             </button>
             <button id="clearBtn" class="btn btn-outline-light ms-2">
                 <i class="fas fa-trash me-1"></i> Clear Results
@@ -18,16 +106,28 @@
         </div>
     </div>
     <div class="card-body">
-        <div id="analysisProgress" class="mb-4">
-            <h3>
+        <!-- Analysis source information banner -->
+        <div class="alert {% if analysis_type == 'pubmed' %}alert-info{% else %}alert-success{% endif %} mb-4">
+            <h5>
                 {% if analysis_type == 'pubmed' %}
-                <i class="fas fa-search me-2"></i>Analyzing PubMed Results
+                <i class="fas fa-search me-2"></i>PubMed Analysis Results
                 <small class="text-muted">Query: {{ query }}</small>
                 {% else %}
-                <i class="fas fa-file-pdf me-2"></i>Analyzing PDF Files
+                <i class="fas fa-file-pdf me-2"></i>PDF Analysis Results
                 {% endif %}
-            </h3>
-            
+            </h5>
+            <p class="mb-0">
+                {% if analysis_type == 'pubmed' %}
+                Results from PubMed search with max {{ max_results }} results.
+                {% else %}
+                Results from PDF analysis {% if use_ocr %}with OCR enabled ({{ language }}){% endif %}.
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- Progress bar for new analyses -->
+        {% if is_new_analysis %}
+        <div id="analysisProgress" class="mb-4">
             <div class="progress mt-3" style="height: 25px;">
                 <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
             </div>
@@ -37,28 +137,40 @@
                 <span id="progressCount">0/0</span>
             </div>
         </div>
+        {% endif %}
         
-        <div id="resultsContainer" class="mt-4" style="display: none;">
-            <table id="resultsTable" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="selectAll"></th>
-                        <th>Title</th>
-                        <th>PMID</th>
-                        <th>Subject of Study</th>
-                        <th>Disease State</th>
-                        <th>Number of Subjects</th>
-                        <th>Type of Study</th>
-                        <th>Intervention</th>
-                        <th>Results Available</th>
-                        <th>Primary Endpoint Met</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Results will be populated by JavaScript -->
-                </tbody>
-            </table>
+        <div id="selectionToolbar" class="d-none mb-3">
+            <div class="d-flex align-items-center">
+                <span class="me-3"><strong><span id="selectionCount">0</span> rows selected</strong></span>
+                <button id="clearSelectionBtn" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i>Clear Selection
+                </button>
+            </div>
+        </div>
+        
+        <div id="resultsContainer" class="mt-4" {% if is_new_analysis %}style="display: none;"{% endif %}>
+            <div class="table-responsive">
+                <table id="resultsTable" class="table table-striped table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Title</th>
+                            <th>PMID</th>
+                            <th>Subject of Study</th>
+                            <th>Disease State</th>
+                            <th>Number of Subjects</th>
+                            <th>Type of Study</th>
+                            <th>Intervention</th>
+                            <th>Results Available</th>
+                            <th>Primary Endpoint Met</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Results will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -104,10 +216,25 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/select/1.6.2/js/dataTables.select.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
 <script>
     $(document).ready(function() {
         let resultsData = [];
         let dataTable;
+        let selectedRows = new Set();
+        
+        // For new analysis, start it
+        {% if is_new_analysis %}
+        startAnalysis();
+        {% else %}
+        // For existing results, load them directly
+        loadResults();
+        {% endif %}
         
         // Start the analysis process
         function startAnalysis() {
@@ -137,7 +264,7 @@
                         $('#progressCount').text(response.count + '/' + response.count);
                         
                         // Enable download button
-                        $('#downloadBtn').prop('disabled', false);
+                        $('#downloadAllBtn').prop('disabled', false);
                         
                         // Load results
                         loadResults();
@@ -165,6 +292,11 @@
                     resultsData = data;
                     populateResultsTable(data);
                     $('#resultsContainer').show();
+                    
+                    {% if is_new_analysis %}
+                    // Hide progress bar for completed analysis
+                    $('#analysisProgress').hide();
+                    {% endif %}
                 },
                 error: function() {
                     $('#progressText').text('Error loading results');
@@ -202,21 +334,183 @@
                 tableBody.append(row);
             });
             
+            // Add filter inputs to each column header
+            $('#resultsTable thead tr').clone(true).appendTo('#resultsTable thead');
+            $('#resultsTable thead tr:eq(1) th').each(function(i) {
+                if (i === 0 || i === 10) { // Skip checkbox column and actions column
+                    $(this).html('');
+                    return;
+                }
+                
+                var title = $(this).text();
+                $(this).html('<input type="text" class="column-filter" placeholder="Filter ' + title + '" />');
+                
+                $('input', this).on('keyup change', function() {
+                    if (dataTable.column(i).search() !== this.value) {
+                        dataTable.column(i).search(this.value).draw();
+                    }
+                });
+            });
+            
             // Initialize DataTable
             dataTable = $('#resultsTable').DataTable({
                 responsive: true,
-                dom: 'Bfrtip',
-                buttons: [
-                    'copy', 'csv', 'excel'
+                scrollX: true,
+                scrollCollapse: true,
+                autoWidth: false,
+                ordering: true,
+                searching: true,
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                columnDefs: [
+                    { orderable: false, targets: [0, 10] }, // Disable sorting on checkbox & actions columns
+                    { width: "40px", targets: 0 },           // Width for checkbox column
+                    { width: "300px", targets: 1 },          // Width for title column
+                    { width: "60px", targets: 10 }           // Width for actions column
                 ]
             });
+            
+            // Add column resizers after DataTable is initialized
+            addColumnResizers();
             
             // Setup event handlers for the view details buttons
             $('.view-details').on('click', function() {
                 let index = $(this).data('index');
                 showResultDetails(resultsData[index]);
             });
+            
+            // Handle row selection with checkboxes
+            $('#selectAll').on('click', function() {
+                const isChecked = $(this).prop('checked');
+                
+                // Update all checkboxes
+                $('.select-row').prop('checked', isChecked);
+                
+                // Update selected rows
+                if (isChecked) {
+                    // Add all indices to the set
+                    $('.select-row').each(function() {
+                        selectedRows.add(parseInt($(this).data('index')));
+                    });
+                } else {
+                    // Clear the set
+                    selectedRows.clear();
+                }
+                
+                updateSelectionUI();
+            });
+            
+            // Individual row selection
+            $(document).on('change', '.select-row', function() {
+                const index = parseInt($(this).data('index'));
+                
+                if ($(this).prop('checked')) {
+                    selectedRows.add(index);
+                } else {
+                    selectedRows.delete(index);
+                    // Uncheck "select all" if any row is unchecked
+                    $('#selectAll').prop('checked', false);
+                }
+                
+                updateSelectionUI();
+            });
+            
+            // Initial setup for selection UI
+            updateSelectionUI();
         }
+        
+        // Add column resizers to the table
+        function addColumnResizers() {
+            // Get all header cells except the first (checkbox) and last (actions)
+            const headerCells = document.querySelectorAll('#resultsTable thead tr:first-child th');
+            
+            // Add resizers to all columns except checkbox and actions
+            headerCells.forEach((th, i) => {
+                if (i === 0 || i === headerCells.length - 1) return; // Skip first and last columns
+                
+                // Create resizer element
+                const resizer = document.createElement('div');
+                resizer.classList.add('table-resizer');
+                th.appendChild(resizer);
+                
+                // Initialize variables for resizing
+                let startX, startWidth;
+                
+                // Mouse down event handler
+                const mouseDownHandler = function(e) {
+                    startX = e.clientX;
+                    startWidth = parseInt(window.getComputedStyle(th).width);
+                    resizer.classList.add('resizing');
+                    
+                    // Add event listeners for mouse movement and mouse up
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('mouseup', mouseUpHandler);
+                    
+                    // Prevent text selection during resize
+                    e.preventDefault();
+                };
+                
+                // Mouse move event handler
+                const mouseMoveHandler = function(e) {
+                    // Calculate width change
+                    const widthChange = e.clientX - startX;
+                    
+                    // Calculate new width (minimum 80px)
+                    const newWidth = Math.max(80, startWidth + widthChange);
+                    
+                    // Apply new width to the column
+                    th.style.width = `${newWidth}px`;
+                    th.style.minWidth = `${newWidth}px`;
+                    
+                    // Force redraw
+                    dataTable.columns.adjust();
+                };
+                
+                // Mouse up event handler
+                const mouseUpHandler = function() {
+                    resizer.classList.remove('resizing');
+                    
+                    // Remove event listeners
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+                    document.removeEventListener('mouseup', mouseUpHandler);
+                    
+                    // Update DataTable's column sizing
+                    dataTable.columns.adjust();
+                };
+                
+                // Add mouse down event listener to resizer
+                resizer.addEventListener('mousedown', mouseDownHandler);
+            });
+        }
+        
+        // Update the selection UI elements
+        function updateSelectionUI() {
+            const count = selectedRows.size;
+            
+            // Update selection toolbar
+            if (count > 0) {
+                $('#selectionToolbar').removeClass('d-none');
+                $('#selectionCount').text(count);
+                $('#downloadSelectedBtn').prop('disabled', false);
+            } else {
+                $('#selectionToolbar').addClass('d-none');
+                $('#downloadSelectedBtn').prop('disabled', true);
+            }
+            
+            // Check "select all" if all rows are selected
+            const totalRows = $('.select-row').length;
+            $('#selectAll').prop('checked', count > 0 && count === totalRows);
+        }
+        
+        // Clear selection
+        $('#clearSelectionBtn').on('click', function() {
+            selectedRows.clear();
+            $('.select-row').prop('checked', false);
+            $('#selectAll').prop('checked', false);
+            updateSelectionUI();
+        });
         
         // Show result details in modal
         function showResultDetails(result) {
@@ -238,9 +532,34 @@
             new bootstrap.Modal(document.getElementById('resultDetailModal')).show();
         }
         
-        // Handle download button
-        $('#downloadBtn').on('click', function() {
+        // Handle download all button
+        $('#downloadAllBtn').on('click', function() {
             window.location.href = '{{ url_for("main.download_excel") }}';
+        });
+        
+        // Handle download selected button
+        $('#downloadSelectedBtn').on('click', function() {
+            // Convert Set to Array
+            const indices = Array.from(selectedRows);
+            
+            // Send selected indices to server
+            $.ajax({
+                url: '{{ url_for("main.selected_results") }}',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ indices: indices }),
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Redirect to download endpoint
+                        window.location.href = '{{ url_for("main.download_selected_excel") }}';
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(error) {
+                    alert('Error processing selection: ' + error.responseJSON?.message || 'Unknown error');
+                }
+            });
         });
         
         // Handle clear button
@@ -258,14 +577,6 @@
                 }
             });
         });
-        
-        // Handle select all checkbox
-        $('#selectAll').on('change', function() {
-            $('.select-row').prop('checked', $(this).prop('checked'));
-        });
-        
-        // Start the analysis automatically when page loads
-        startAnalysis();
     });
 </script>
 {% endblock %}

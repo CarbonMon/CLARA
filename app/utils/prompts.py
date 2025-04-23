@@ -43,34 +43,25 @@ def get_base_analysis_prompt() -> str:
     """
 
 def get_pdf_prompt_addition() -> str:
-    """
-    Get the additional prompt specific to PDF analysis.
-    
-    Returns:
-        PDF-specific prompt addition
-    """
+
+    # PDF-specific prompt addition
+
     return """
     Note: This is a full-text PDF of a clinical trial. Extract as much detail as possible from the full text.
     """
 
 def get_openai_specific_instructions() -> str:
-    """
-    Get OpenAI-specific instructions.
     
-    Returns:
-        OpenAI-specific instructions
-    """
+    # Returns OpenAI-specific instructions
+    
     return """
     Format your response as a valid JSON object without any explanations or text outside the JSON structure.
     """
 
 def get_claude_specific_instructions() -> str:
-    """
-    Get Claude-specific instructions.
+
+    # Returns Claude-specific instructions
     
-    Returns:
-        Claude-specific instructions
-    """
     return """
     You must format your output as a valid JSON object. Do not include any text outside the JSON structure.
     Do not wrap the JSON in markdown code blocks - just return the raw JSON object.

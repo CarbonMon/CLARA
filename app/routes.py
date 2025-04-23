@@ -96,7 +96,8 @@ def analyze_pubmed():
     return render_template('results.html', 
                           analysis_type='pubmed',
                           query=session.get('query'),
-                          max_results=session.get('max_results'))
+                          max_results=session.get('max_results'),
+                          is_new_analysis=True)
 
 @bp.route('/pdf-upload', methods=['GET', 'POST'])
 def pdf_upload():
@@ -149,7 +150,37 @@ def analyze_pdf():
                           analysis_type='pdf',
                           files=pdf_filenames,
                           use_ocr=session.get('use_ocr'),
-                          language=session.get('language'))
+                          language=session.get('language'),
+                          is_new_analysis=True)
+
+@bp.route('/view-results')
+def view_results():
+    """View the most recent analysis results"""
+    # Check if there are any analysis results to show
+    if not session.get('analysis_results'):
+        flash('No analysis results found', 'warning')
+        return redirect(url_for('main.index'))
+    
+    # Get analysis details from session
+    analysis_type = session.get('analysis_type')
+    
+    if analysis_type == 'pubmed':
+        return render_template('results.html',
+                              analysis_type='pubmed',
+                              query=session.get('query'),
+                              max_results=session.get('max_results'),
+                              is_new_analysis=False)
+    else:  # pdf
+        pdf_filenames = []
+        if session.get('pdf_files'):
+            pdf_filenames = [f['name'] for f in session.get('pdf_files', [])]
+        
+        return render_template('results.html',
+                              analysis_type='pdf',
+                              files=pdf_filenames,
+                              use_ocr=session.get('use_ocr'),
+                              language=session.get('language'),
+                              is_new_analysis=False)
 
 @bp.route('/api/start-analysis', methods=['POST'])
 def start_analysis():
@@ -204,6 +235,7 @@ def start_analysis():
         # Store results in session
         session['analysis_results'] = [result for result in results]
         session['analysis_status'] = 'completed'
+        session['analysis_timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         return jsonify({'status': 'success', 'message': 'Analysis completed'})
     
@@ -261,6 +293,7 @@ def clear_results():
     session.pop('analysis_results', None)
     session.pop('analysis_status', None)
     session.pop('analysis_type', None)
+    session.pop('analysis_timestamp', None)
     
     # Clear PubMed search parameters
     session.pop('query', None)
@@ -270,6 +303,15 @@ def clear_results():
     session.pop('pdf_files', None)
     session.pop('use_ocr', None)
     session.pop('language', None)
+    
+    # Cleanup temporary files
+    if session.get('pdf_files'):
+        for file_info in session.get('pdf_files', []):
+            try:
+                if os.path.exists(file_info['path']):
+                    os.remove(file_info['path'])
+            except Exception as e:
+                current_app.logger.error(f"Error deleting file {file_info['path']}: {e}")
     
     return jsonify({'status': 'success'})
 
