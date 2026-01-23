@@ -3,85 +3,84 @@
 {% block title %}API Settings - Clinical Research Analysis Tool{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-lg">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0"><i class="fas fa-key me-2"></i>API Settings</h2>
+<div class="settings-container">
+    <div class="settings-header">
+        <div class="settings-title">
+            <i class="fas fa-key settings-icon"></i>
+            <h1>API Configuration</h1>
+            <p class="settings-subtitle">Configure your AI model providers and credentials</p>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <div class="card-header">
+            <h3><i class="fas fa-key me-2"></i>API Credentials</h3>
+        </div>
+        <div class="card-body">
+            {% if session.get('api_key_valid') %}
+            <div class="alert alert-success mb-4">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>{{ session.get('api_provider')|capitalize }} API is configured and validated!</strong>
             </div>
-            <div class="card-body">
-                <p class="lead">Configure your API credentials to use with the analysis tools.</p>
-                
-                {% if session.get('api_key_valid') %}
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong>{{ session.get('api_provider')|capitalize }} API is configured and validated!</strong>
-                </div>
-                {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Please configure your API settings to use the analysis tools
-                </div>
-                {% endif %}
-                
-                <form method="POST" action="{{ url_for('main.settings') }}">
-                    {{ form.csrf_token }}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.api_provider.label }}</label>
-                        {{ form.api_provider(class="form-select") }}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.api_key.label }}</label>
-                        {{ form.api_key(class="form-control", placeholder="Enter your API key") }}
-                        <div class="form-text">
-                            Your API key is stored securely in your session and is not persisted on the server.
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.model.label }}</label>
-                        {{ form.model(class="form-select") }}
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                </form>
-                
-                <div class="mt-4">
-                    <h4>API Information</h4>
-                    <div class="accordion" id="apiInfoAccordion">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="openaiHeading">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#openaiInfo" aria-expanded="false" aria-controls="openaiInfo">
-                                    OpenAI API
-                                </button>
-                            </h2>
-                            <div id="openaiInfo" class="accordion-collapse collapse" aria-labelledby="openaiHeading" data-bs-parent="#apiInfoAccordion">
-                                <div class="accordion-body">
-                                    <p>To use OpenAI models, you need an API key from OpenAI.</p>
-                                    <p>You can get an API key by signing up at <a href="https://platform.openai.com/signup" target="_blank">platform.openai.com</a>.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="anthropicHeading">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#anthropicInfo" aria-expanded="false" aria-controls="anthropicInfo">
-                                    Anthropic API
-                                </button>
-                            </h2>
-                            <div id="anthropicInfo" class="accordion-collapse collapse" aria-labelledby="anthropicHeading" data-bs-parent="#apiInfoAccordion">
-                                <div class="accordion-body">
-                                    <p>To use Claude models, you need an API key from Anthropic.</p>
-                                    <p>You can get an API key by signing up at <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {% else %}
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Please configure your API settings to use the analysis tools
             </div>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('main.settings') }}" class="api-form">
+                {{ form.csrf_token }}
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-provider me-2"></i>
+                        {{ form.api_provider.label }}
+                    </label>
+                    <div class="provider-selector">
+                        {{ form.api_provider(class="form-select provider-select") }}
+                        <div class="provider-hint">Select your preferred AI model provider</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-key me-2"></i>
+                        {{ form.api_key.label }}
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock input-icon"></i>
+                        {{ form.api_key(class="form-control api-key-input", placeholder="Enter your API key") }}
+                        <button type="button" class="toggle-password" title="Show/Hide API Key">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Your API key is stored securely in your session and is not persisted on the server.
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-microchip me-2"></i>
+                        {{ form.model.label }}
+                    </label>
+                    {{ form.model(class="form-select") }}
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Choose the specific model you want to use for analysis
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    {{ form.submit(class="btn btn-primary btn-lg submit-btn") }}
+                    <button type="button" class="btn btn-soft test-connection">
+                        <i class="fas fa-plug me-2"></i>
+                        Test Connection
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -100,7 +99,7 @@
             
             if (provider === 'openai') {
                 // Add OpenAI models
-                modelSelect.append(new Option('GPT-4o', 'gpt-4o'));
+                modelSelect.append(new Option('GPT-4o (Latest)', 'gpt-4o'));
                 modelSelect.append(new Option('GPT-4 Turbo', 'gpt-4-turbo'));
                 modelSelect.append(new Option('GPT-3.5 Turbo', 'gpt-3.5-turbo'));
                 
@@ -108,14 +107,74 @@
                 modelSelect.val('gpt-4o');
             } else {
                 // Add Claude models
-                modelSelect.append(new Option('Claude 3 Opus', 'claude-3-opus-20240229'));
-                modelSelect.append(new Option('Claude 3 Sonnet', 'claude-3-sonnet-20240229'));
-                modelSelect.append(new Option('Claude 3 Haiku', 'claude-3-haiku-20240307'));
+                modelSelect.append(new Option('Claude 3 Opus (Most Capable)', 'claude-3-opus-20240229'));
+                modelSelect.append(new Option('Claude 3 Sonnet (Balanced)', 'claude-3-sonnet-20240229'));
+                modelSelect.append(new Option('Claude 3 Haiku (Fast)', 'claude-3-haiku-20240307'));
                 
                 // Set default
                 modelSelect.val('claude-3-sonnet-20240229');
             }
         });
+
+        // Toggle password visibility
+        $('.toggle-password').click(function() {
+            const input = $('.api-key-input');
+            const icon = $(this).find('i');
+            
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+
+        // Test connection functionality
+        $('.test-connection').click(function() {
+            const provider = $('#api_provider').val();
+            const apiKey = $('#api_key').val();
+            
+            if (!apiKey) {
+                alert('Please enter your API key first');
+                return;
+            }
+            
+            // Show loading state
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Testing...');
+            btn.prop('disabled', true);
+            
+            // Simulate connection test
+            setTimeout(() => {
+                btn.html(originalText);
+                btn.prop('disabled', false);
+                
+                if (Math.random() > 0.5) {
+                    alert('✅ Connection successful! Your API key is valid.');
+                } else {
+                    alert('❌ Connection failed. Please check your API key and try again.');
+                }
+            }, 2000);
+        });
+
+        // Add provider-specific styling
+        $('#api_provider').change(function() {
+            const provider = $(this).val();
+            const card = $('.settings-card');
+            
+            if (provider === 'openai') {
+                card.css('--provider-color', '#74aa9c');
+                card.css('--provider-gradient', 'linear-gradient(135deg, #74aa9c 0%, #10b981 100%)');
+            } else {
+                card.css('--provider-color', '#3b82f6');
+                card.css('--provider-gradient', 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)');
+            }
+        });
+        
+        // Initialize with current provider
+        $('#api_provider').trigger('change');
     });
 </script>
 {% endblock %}

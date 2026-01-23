@@ -40,6 +40,8 @@ function applyThemeAttributes(theme) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing theme...');
+    
     // Initialize theme
     applyThemeAttributes(getInitialTheme());
 
@@ -48,9 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeIcon = document.getElementById('theme-icon');
 
     if (themeToggle) {
+        console.log('Theme toggle button found, adding event listener');
         themeToggle.addEventListener('click', function() {
+            console.log('Theme toggle clicked');
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            console.log('Current theme:', currentTheme);
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            console.log('New theme:', newTheme);
             applyThemeAttributes(newTheme);
             window.localStorage.setItem(THEME_LOCAL_STORAGE_KEY, newTheme);
             updateThemeIcon(newTheme);
@@ -66,6 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial icon update
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
         updateThemeIcon(currentTheme);
+    } else {
+        console.error('Theme toggle button not found');
     }
 
     // Enable tooltips everywhere

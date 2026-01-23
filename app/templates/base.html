@@ -2,112 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Clinical Research Analysis Tool{% endblock %}</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- DataTables CSS -->
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CLARA - Clinical Research Analysis Tool{% endblock %}</title>
+    <meta property="og:title" content="CLARA - Clinical Research Analysis Tool"/>
+    <meta name="description" content="AI-powered clinical research analysis tool for analyzing research papers and data."/>
+    <meta property="og:description" content="AI-powered clinical research analysis tool for analyzing research papers and data."/>
+
+    <!-- OpenAI Sans Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    
+
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="fas fa-microscope me-2"></i>
-                Clinical Research Analysis Tool
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('main.index') %}active{% endif %}" href="{{ url_for('main.index') }}">
-                            <i class="fas fa-home me-1"></i> Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('main.pubmed_search') %}active{% endif %}" href="{{ url_for('main.pubmed_search') }}">
-                            <i class="fas fa-search me-1"></i> PubMed Search
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('main.pdf_upload') %}active{% endif %}" href="{{ url_for('main.pdf_upload') }}">
-                            <i class="fas fa-file-pdf me-1"></i> PDF Upload
-                        </a>
-                    </li>
-                    {% if session.get('analysis_results') %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('main.view_results') %}active{% endif %}" href="{{ url_for('main.view_results') }}">
-                            <i class="fas fa-chart-bar me-1"></i> Results
-                            <span class="badge bg-light text-dark">{{ session.get('analysis_results')|length }}</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('main.settings') %}active{% endif %}" href="{{ url_for('main.settings') }}">
-                            <i class="fas fa-cog me-1"></i> Settings
-                        </a>
-                    </li>
-                </ul>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <span class="logo">
+                    <a href="{{ url_for('main.index') }}" class="logo-link">
+                        <strong>CLARA</strong>
+                    </a>
+                </span>
+            </div>
+            <div class="header-right">
+                <nav class="nav">
+                    <a href="{{ url_for('main.settings') }}" class="nav-link">Settings</a>
+                </nav>
+                <div class="theme-toggle">
+                    <button type="button" id="theme-toggle" class="btn btn-soft" title="Toggle theme">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                </div>
+                <div class="auth-buttons">
+                    <button type="button" class="btn btn-soft">Login</button>
+                    <a href="#" class="btn btn-solid">Sign up</a>
+                </div>
             </div>
         </div>
-    </nav>
 
-    <!-- Flash messages -->
-    <div class="container mt-3">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <main class="main" data-sidebar="expanded" data-mobile-menu="hidden">
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <div class="sidebar-section">
+                        <div class="sidebar-header">Get started</div>
+                        <div>
+                            <a class="sidebar-link {% if request.path == url_for('main.index') %}active{% endif %}" href="{{ url_for('main.index') }}">
+                                <span class="sidebar-link-name">Overview</span>
+                            </a>
+                        </div>
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-header">Analysis Tools</div>
+                        <div>
+                            <a class="sidebar-link {% if request.path == url_for('main.pubmed_search') %}active{% endif %}" href="{{ url_for('main.pubmed_search') }}">
+                                <span class="sidebar-link-name">PubMed Search</span>
+                            </a>
+                        </div>
+                        <div>
+                            <a class="sidebar-link {% if request.path == url_for('main.pdf_upload') %}active{% endif %}" href="{{ url_for('main.pdf_upload') }}">
+                                <span class="sidebar-link-name">PDF Upload</span>
+                            </a>
+                        </div>
+                        {% if session.get('analysis_results') %}
+                        <div>
+                            <a class="sidebar-link {% if request.path == url_for('main.view_results') %}active{% endif %}" href="{{ url_for('main.view_results') }}">
+                                <span class="sidebar-link-name">Results</span>
+                                <span class="badge">{{ session.get('analysis_results')|length }}</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-header">Resources</div>
+                        <div>
+                            <a class="sidebar-link {% if request.path == url_for('main.settings') %}active{% endif %}" href="{{ url_for('main.settings') }}">
+                                <span class="sidebar-link-name">Settings</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </aside>
 
-    <!-- Main content -->
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
-    </div>
+            <div class="content">
+                <!-- Flash messages -->
+                <div class="flash-messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    {{ message }}
+                                    <button type="button" class="alert-close" aria-label="Close">&times;</button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
 
-    <!-- Footer -->
-    <footer class="bg-light text-center text-lg-start mt-5">
-        <div class="container p-4">
-            <div class="text-center p-3">
-                © 2024 Clinical Research Analysis Tool
+                <!-- Main content -->
+                <div class="page-content">
+                    {% block content %}{% endblock %}
+                </div>
             </div>
-        </div>
-    </footer>
+        </main>
+    </div>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

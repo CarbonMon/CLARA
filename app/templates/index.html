@@ -1,78 +1,74 @@
 {% extends 'base.html' %}
 
-{% block title %}Clinical Research Analysis Tool{% endblock %}
+{% block title %}CLARA - Overview{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card shadow-lg">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0"><i class="fas fa-microscope me-2"></i>Welcome to the Clinical Research Analysis Tool</h2>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <h3 class="mb-4">Analyze Clinical Research with AI</h3>
-                        <p class="lead">
-                            This tool helps researchers and healthcare professionals analyze clinical trial data from multiple sources using advanced AI models.
-                        </p>
-                        <p>
-                            Our platform leverages the power of OpenAI and Anthropic models to extract and summarize key information from clinical research papers and documents.
-                        </p>
-                        <div class="mt-4">
-                            <h4>Key Features:</h4>
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><i class="fas fa-search text-primary me-2"></i> Search and analyze PubMed clinical trials</li>
-                                <li class="list-group-item"><i class="fas fa-file-pdf text-primary me-2"></i> Upload and analyze clinical trial PDFs</li>
-                                <li class="list-group-item"><i class="fas fa-robot text-primary me-2"></i> Advanced AI extraction of study parameters</li>
-                                <li class="list-group-item"><i class="fas fa-table text-primary me-2"></i> Export results to Excel for further analysis</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        {% if session.get('analysis_results') %}
-                        <div class="card bg-light mb-4">
-                            <div class="card-body text-center">
-                                <h3 class="card-title">Current Analysis Results</h3>
-                                <p>You have <strong>{{ session.get('analysis_results')|length }}</strong> analyzed items from your last analysis:</p>
-                                <div class="d-grid gap-3">
-                                    <a href="{{ url_for('main.view_results') }}" class="btn btn-success btn-lg">
-                                        <i class="fas fa-chart-bar me-2"></i> View Current Results
-                                    </a>
-                                </div>
-                                <div class="mt-3">
-                                    <small class="text-muted">Analysis type: {{ session.get('analysis_type')|capitalize }}</small>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    
-                        <div class="card bg-light mb-4">
-                            <div class="card-body text-center">
-                                <h3 class="card-title">Get Started</h3>
-                                <p>Choose one of the options below to begin analyzing clinical research</p>
-                                <div class="d-grid gap-3">
-                                    <a href="{{ url_for('main.pubmed_search') }}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-search me-2"></i> PubMed Search
-                                    </a>
-                                    <a href="{{ url_for('main.pdf_upload') }}" class="btn btn-success btn-lg">
-                                        <i class="fas fa-file-pdf me-2"></i> PDF Upload
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {% if not session.get('api_key_valid') %}
-                        <div class="alert alert-warning">
-                            <h4><i class="fas fa-exclamation-triangle me-2"></i>API Setup Required</h4>
-                            <p>You need to configure your API settings before you can use the analysis features.</p>
-                            <a href="{{ url_for('main.settings') }}" class="btn btn-warning">
-                                <i class="fas fa-cog me-2"></i> Configure API Settings
-                            </a>
-                        </div>
-                        {% endif %}
+<div class="docs-markdown-page docs-markdown-content">
+    <div class="flex w-full items-start">
+        <div class="docs-markdown-page-inner">
+            <div>
+                <div class="title-container flex flex-col items-baseline justify-between lg:flex-row">
+                    <div class="order-2 lg:order-1">
+                        <h1 id="page-top" class="docs-markdown-page-title">Clinical Research Analysis Tool</h1>
+                        <div class="docs-markdown-page-subtitle">AI-powered analysis of clinical research papers and data</div>
                     </div>
                 </div>
+
+                <p>This tool helps researchers and healthcare professionals analyze clinical trial data from multiple sources using advanced AI models. Our platform leverages the power of OpenAI and Anthropic models to extract and summarize key information from clinical research papers and documents.</p>
+
+                <h2>Key Features</h2>
+                <ul>
+                    <li><strong>PubMed Search:</strong> Search and analyze clinical trials from PubMed database</li>
+                    <li><strong>PDF Upload:</strong> Upload and analyze clinical trial PDFs with AI extraction</li>
+                    <li><strong>AI Analysis:</strong> Advanced AI extraction of study parameters and key findings</li>
+                    <li><strong>Data Export:</strong> Export results to Excel for further analysis</li>
+                </ul>
+
+                {% if session.get('analysis_results') %}
+                <div class="card">
+                    <div class="card-header" style="background-color: var(--color-bg-secondary); border-color: var(--color-border);">
+                        <h3>Current Analysis Results</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>You have <strong>{{ session.get('analysis_results')|length }}</strong> analyzed items from your last analysis.</p>
+                        <p>Analysis type: {{ session.get('analysis_type')|capitalize }}</p>
+                        <a href="{{ url_for('main.view_results') }}" class="btn btn-solid">
+                            View Current Results
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <h2>Get Started</h2>
+                <p>Choose one of the options below to begin analyzing clinical research:</p>
+
+                <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin: 24px 0;">
+                    <a href="{{ url_for('main.pubmed_search') }}" class="card" style="text-decoration: none; color: inherit;">
+                        <div class="card-body" style="text-align: center;">
+                            <h3 style="color: var(--color-link); margin-bottom: 8px;">🔍 PubMed Search</h3>
+                            <p>Search and analyze clinical trials from the PubMed database using AI-powered extraction.</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ url_for('main.pdf_upload') }}" class="card" style="text-decoration: none; color: inherit;">
+                        <div class="card-body" style="text-align: center;">
+                            <h3 style="color: var(--color-link); margin-bottom: 8px;">📄 PDF Upload</h3>
+                            <p>Upload clinical trial PDFs for comprehensive AI analysis and parameter extraction.</p>
+                        </div>
+                    </a>
+                </div>
+
+                {% if not session.get('api_key_valid') %}
+                <div class="alert alert-warning">
+                    <div>
+                        <h4>API Setup Required</h4>
+                        <p>You need to configure your API settings before you can use the analysis features.</p>
+                        <a href="{{ url_for('main.settings') }}" class="btn btn-solid" style="margin-top: 8px; display: inline-block;">
+                            Configure API Settings
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

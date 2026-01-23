@@ -3,60 +3,82 @@
 {% block title %}Analysis Results{% endblock %}
 
 {% block head %}
-<!-- DataTables and extensions CSS -->
-<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/select/1.6.2/css/select.dataTables.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
-
+<!-- Grid.js CSS -->
+<link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet">
+<!-- Resizable Columns CSS -->
+<link href="https://unpkg.com/jsuites/dist/jsuites.css" rel="stylesheet" type="text/css" />
 <style>
-    /* Custom styling for DataTables */
-    .dataTables_wrapper {
-        padding: 0;
-        width: 100%;
+    /* Grid.js styling */
+    .gridjs-wrapper {
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        width: 100% !important;
+        min-width: 100% !important;
     }
-    
-    /* Fix length menu dropdown */
-    .dataTables_length select {
-        min-width: 70px;
-        padding-right: 25px !important;
-    }
-    
-    /* Scrollable table container */
-    .table-responsive {
-        overflow-x: auto;
-        width: 100%;
-    }
-    
-    /* Column resizer styles */
-    .table th {
+
+    .gridjs-thead th {
+        background-color: #f8f9fa;
+        padding: 0.75rem;
+        font-weight: 500;
         position: relative;
-        min-width: 100px; /* Minimum column width */
     }
-    
-    .table-resizer {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 8px;
-        height: 100%;
-        cursor: col-resize;
-        z-index: 1;
-        background-color: transparent;
+
+    .gridjs-tbody td {
+        padding: 0.75rem;
+        vertical-align: middle;
     }
-    
-    .table-resizer:hover, 
-    .table-resizer.resizing {
+
+    .gridjs-pagination {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .gridjs-pagination .gridjs-summary {
+        margin-bottom: 0;
+    }
+
+    .gridjs-pagination .gridjs-pages button {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        margin: 0 0.25rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+    }
+
+    .gridjs-pagination .gridjs-pages button:hover:not(:disabled) {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
         background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+
+    .gridjs-pagination .gridjs-pages button:disabled {
         opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .gridjs-search {
+        margin-bottom: 1rem;
+    }
+
+    .gridjs-search-input {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        padding: 0.375rem 0.75rem;
+        width: 100%;
     }
     
-    /* Column filter inputs */
-    .column-filter {
-        width: 100%;
-        padding: 6px;
-        margin-top: 5px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
+    /* Empty state styling */
+    #emptyState {
+        border-radius: 0.5rem;
+        padding: 3rem !important;
     }
     
     /* Selection toolbar */
@@ -64,43 +86,124 @@
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 4px;
-        padding: 10px;
+        padding: 10px 15px;
         margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
-    /* First column (checkbox) width */
-    #resultsTable th:first-child,
-    #resultsTable td:first-child {
+    /* Modal detail styling */
+    #resultDetailContent .card {
+        margin-bottom: 1rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    #resultDetailContent .card-header {
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+    }
+    
+    #resultDetailTabs .nav-link {
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+    }
+    
+    /* Badge styling */
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.35em 0.65em;
+        font-weight: 500;
+    }
+    
+    /* Column styling */
+    .checkbox-column {
+        width: 40px !important;
+        max-width: 40px !important;
+    }
+    
+    .actions-column {
+        width: 80px !important;
+        max-width: 80px !important;
+    }
+    
+    /* Force table to fill container */
+    .gridjs-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .gridjs table {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 100% !important;
+    }
+    
+    /* Column resizing styles */
+    .resize-handle {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        cursor: col-resize;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .resize-handle:hover, 
+    .resize-handle.active {
+        background-color: #0d6efd;
+        opacity: 0.4;
+    }
+    
+    /* Column filters */
+    .column-filter {
+        width: 100%;
+        margin-top: 5px;
+        padding: 5px;
+        font-size: 0.85rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    /* Scroll container for wide tables */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Width for common columns */
+    th[data-column-id="checkbox"] {
         width: 40px;
+        min-width: 40px;
         max-width: 40px;
     }
     
-    /* Last column (actions) width */
-    #resultsTable th:last-child,
-    #resultsTable td:last-child {
-        width: 60px;
-        max-width: 60px;
+    th[data-column-id="actions"] {
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card shadow">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div class="card-header" style="background-color: var(--color-accent); color: white; border-color: var(--color-accent);" d-flex justify-content-between align-items-center">
         <h2 class="mb-0">
             <i class="fas fa-chart-bar me-2"></i>Analysis Results
             {% if session.get('analysis_timestamp') %}
-            <small class="text-light">{{ session.get('analysis_timestamp') }}</small>
+            <small style="color: rgba(255, 255, 255, 0.8);">{{ session.get('analysis_timestamp') }}</small>
             {% endif %}
         </h2>
         <div>
-            <button id="downloadAllBtn" class="btn btn-light" {% if not session.get('analysis_results') %}disabled{% endif %}>
+            <button id="downloadAllBtn" class="btn" style="background-color: white; color: var(--color-text-primary); border-color: var(--color-border);" {% if not session.get('analysis_results') %}disabled{% endif %}>
                 <i class="fas fa-download me-1"></i> Download All
             </button>
-            <button id="downloadSelectedBtn" class="btn btn-outline-light ms-2" disabled>
+            <button id="downloadSelectedBtn" class="btn ms-2" style="background-color: transparent; color: white; border-color: white;" disabled>
                 <i class="fas fa-file-export me-1"></i> Download Selected
             </button>
-            <button id="clearBtn" class="btn btn-outline-light ms-2">
+            <button id="clearBtn" class="btn ms-2" style="background-color: transparent; color: white; border-color: white;">
                 <i class="fas fa-trash me-1"></i> Clear Results
             </button>
         </div>
@@ -140,36 +243,25 @@
         {% endif %}
         
         <div id="selectionToolbar" class="d-none mb-3">
-            <div class="d-flex align-items-center">
-                <span class="me-3"><strong><span id="selectionCount">0</span> rows selected</strong></span>
-                <button id="clearSelectionBtn" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-times me-1"></i>Clear Selection
-                </button>
+            <div>
+                <strong><span id="selectionCount">0</span> rows selected</strong>
             </div>
+            <button id="clearSelectionBtn" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-times me-1"></i>Clear Selection
+            </button>
         </div>
         
         <div id="resultsContainer" class="mt-4" {% if is_new_analysis %}style="display: none;"{% endif %}>
-            <div class="table-responsive">
-                <table id="resultsTable" class="table table-striped table-bordered" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAll"></th>
-                            <th>Title</th>
-                            <th>PMID</th>
-                            <th>Subject of Study</th>
-                            <th>Disease State</th>
-                            <th>Number of Subjects</th>
-                            <th>Type of Study</th>
-                            <th>Intervention</th>
-                            <th>Results Available</th>
-                            <th>Primary Endpoint Met</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Results will be populated by JavaScript -->
-                    </tbody>
-                </table>
+            <!-- Empty state message -->
+            <div id="emptyState" class="text-center p-5 bg-light rounded d-none">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No Results Available</h4>
+                <p class="text-muted">No analysis results found. Start a new analysis to see results here.</p>
+            </div>
+            
+            <!-- Grid.js will render here -->
+            <div class="table-container">
+                <div id="gridjs-wrapper"></div>
             </div>
         </div>
     </div>
@@ -216,17 +308,17 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/select/1.6.2/js/dataTables.select.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+<!-- Grid.js -->
+<script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+<!-- JSuites for resizable columns -->
+<script src="https://unpkg.com/jsuites/dist/jsuites.js"></script>
+
 <script>
     $(document).ready(function() {
         let resultsData = [];
-        let dataTable;
         let selectedRows = new Set();
+        let grid = null;
+        let columnFilters = {};
         
         // For new analysis, start it
         {% if is_new_analysis %}
@@ -269,8 +361,12 @@
                         // Load results
                         loadResults();
                     } else {
-                        // Update progress 
+                        // Update progress based on count of processed items
+                        const processed = response.count || 0;
+                        const percentage = response.total ? Math.round((processed / response.total) * 100) : 0;
+                        $('#progressBar').css('width', Math.max(5, percentage) + '%');
                         $('#progressText').text('Processing...');
+                        $('#progressCount').text(processed + (response.total ? '/' + response.total : ''));
                         
                         // Check again in 2 seconds
                         setTimeout(checkStatus, 2000);
@@ -290,8 +386,16 @@
                 type: 'GET',
                 success: function(data) {
                     resultsData = data;
-                    populateResultsTable(data);
-                    $('#resultsContainer').show();
+                    
+                    if (data && data.length > 0) {
+                        populateResultsTable(data);
+                        $('#emptyState').addClass('d-none');
+                        $('#resultsContainer').show();
+                    } else {
+                        // Show empty state
+                        $('#emptyState').removeClass('d-none');
+                        $('#resultsContainer').show();
+                    }
                     
                     {% if is_new_analysis %}
                     // Hide progress bar for completed analysis
@@ -300,189 +404,374 @@
                 },
                 error: function() {
                     $('#progressText').text('Error loading results');
+                    $('#progressBar').addClass('bg-danger');
                 }
             });
         }
         
-        // Populate results table
-        function populateResultsTable(data) {
-            if (dataTable) {
-                dataTable.destroy();
-            }
+        // Apply column filters
+        function applyFilters(data) {
+            if (Object.keys(columnFilters).length === 0) return data;
             
-            let tableBody = $('#resultsTable tbody');
-            tableBody.empty();
-            
-            data.forEach(function(item, index) {
-                let row = `<tr>
-                    <td><input type="checkbox" class="select-row" data-index="${index}"></td>
-                    <td>${item.Title || ''}</td>
-                    <td>${item.PMID || 'N/A'}</td>
-                    <td>${item['Subject of Study'] || ''}</td>
-                    <td>${item['Disease State'] || ''}</td>
-                    <td>${item['Number of Subjects Studied'] || ''}</td>
-                    <td>${item['Type of Study'] || ''}</td>
-                    <td>${item.Intervention || ''}</td>
-                    <td>${item['Results Available'] || ''}</td>
-                    <td>${item['Primary Endpoint Met'] || ''}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary view-details" data-index="${index}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>`;
-                tableBody.append(row);
-            });
-            
-            // Add filter inputs to each column header
-            $('#resultsTable thead tr').clone(true).appendTo('#resultsTable thead');
-            $('#resultsTable thead tr:eq(1) th').each(function(i) {
-                if (i === 0 || i === 10) { // Skip checkbox column and actions column
-                    $(this).html('');
-                    return;
+            return data.filter(row => {
+                for (const [key, value] of Object.entries(columnFilters)) {
+                    if (!value) continue;
+                    
+                    const cellValue = row[key] || '';
+                    if (cellValue.toString().toLowerCase().indexOf(value.toLowerCase()) === -1) {
+                        return false;
+                    }
                 }
+                return true;
+            });
+        }
+        
+        // Initialize resizable columns
+        function initResizableColumns() {
+            const ths = document.querySelectorAll('.gridjs-thead th');
+            
+            ths.forEach((th) => {
+                if (!th.querySelector('.resize-handle')) {
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'resize-handle';
+                    th.appendChild(resizeHandle);
+                    
+                    let startX, startWidth;
+                    
+                    resizeHandle.addEventListener('mousedown', function(e) {
+                        startX = e.clientX;
+                        startWidth = th.offsetWidth;
+                        resizeHandle.classList.add('active');
+                        
+                        document.addEventListener('mousemove', resize);
+                        document.addEventListener('mouseup', stopResize);
+                        
+                        // Add class to prevent text selection while resizing
+                        document.body.classList.add('disable-select');
+                        
+                        e.preventDefault();
+                    });
+                    
+                    function resize(e) {
+                        const width = startWidth + e.clientX - startX;
+                        if (width > 50) { // Minimum width
+                            th.style.width = width + 'px';
+                            th.style.minWidth = width + 'px';
+                        }
+                    }
+                    
+                    function stopResize() {
+                        resizeHandle.classList.remove('active');
+                        document.removeEventListener('mousemove', resize);
+                        document.removeEventListener('mouseup', stopResize);
+                        document.body.classList.remove('disable-select');
+                    }
+                }
+            });
+        }
+        
+        // Add column filters to the header
+        function addColumnFilters() {
+            const headers = document.querySelectorAll('.gridjs-thead th');
+            
+            headers.forEach((header, index) => {
+                if (index === 0 || index === headers.length - 1) return; // Skip checkbox and actions columns
                 
-                var title = $(this).text();
-                $(this).html('<input type="text" class="column-filter" placeholder="Filter ' + title + '" />');
+                const columnName = header.getAttribute('data-column-id');
+                if (!columnName) return;
                 
-                $('input', this).on('keyup change', function() {
-                    if (dataTable.column(i).search() !== this.value) {
-                        dataTable.column(i).search(this.value).draw();
+                const filter = document.createElement('input');
+                filter.type = 'text';
+                filter.className = 'column-filter';
+                filter.placeholder = 'Filter...';
+                filter.value = columnFilters[columnName] || '';
+                
+                filter.addEventListener('input', function() {
+                    const value = this.value.trim();
+                    
+                    if (value) {
+                        columnFilters[columnName] = value;
+                    } else {
+                        delete columnFilters[columnName];
+                    }
+                    
+                    // Update the grid with filtered data
+                    if (grid) {
+                        grid.updateConfig({
+                            data: applyFilters(resultsData)
+                        }).forceRender();
+                        
+                        // Re-initialize resizable columns after render
+                        setTimeout(initResizableColumns, 100);
+                        // Re-add column filters after render
+                        setTimeout(() => {
+                            addColumnFilters();
+                            // Update filter values
+                            document.querySelectorAll('.column-filter').forEach(filter => {
+                                const colName = filter.closest('th').getAttribute('data-column-id');
+                                if (colName && columnFilters[colName]) {
+                                    filter.value = columnFilters[colName];
+                                }
+                            });
+                        }, 100);
                     }
                 });
-            });
-            
-            // Initialize DataTable
-            dataTable = $('#resultsTable').DataTable({
-                responsive: true,
-                scrollX: true,
-                scrollCollapse: true,
-                autoWidth: false,
-                ordering: true,
-                searching: true,
-                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                columnDefs: [
-                    { orderable: false, targets: [0, 10] }, // Disable sorting on checkbox & actions columns
-                    { width: "40px", targets: 0 },           // Width for checkbox column
-                    { width: "300px", targets: 1 },          // Width for title column
-                    { width: "60px", targets: 10 }           // Width for actions column
-                ]
-            });
-            
-            // Add column resizers after DataTable is initialized
-            addColumnResizers();
-            
-            // Setup event handlers for the view details buttons
-            $('.view-details').on('click', function() {
-                let index = $(this).data('index');
-                showResultDetails(resultsData[index]);
-            });
-            
-            // Handle row selection with checkboxes
-            $('#selectAll').on('click', function() {
-                const isChecked = $(this).prop('checked');
                 
-                // Update all checkboxes
-                $('.select-row').prop('checked', isChecked);
-                
-                // Update selected rows
-                if (isChecked) {
-                    // Add all indices to the set
-                    $('.select-row').each(function() {
-                        selectedRows.add(parseInt($(this).data('index')));
-                    });
-                } else {
-                    // Clear the set
-                    selectedRows.clear();
-                }
-                
-                updateSelectionUI();
+                header.appendChild(filter);
             });
-            
-            // Individual row selection
-            $(document).on('change', '.select-row', function() {
-                const index = parseInt($(this).data('index'));
-                
-                if ($(this).prop('checked')) {
-                    selectedRows.add(index);
-                } else {
-                    selectedRows.delete(index);
-                    // Uncheck "select all" if any row is unchecked
-                    $('#selectAll').prop('checked', false);
-                }
-                
-                updateSelectionUI();
-            });
-            
-            // Initial setup for selection UI
-            updateSelectionUI();
         }
         
-        // Add column resizers to the table
-        function addColumnResizers() {
-            // Get all header cells except the first (checkbox) and last (actions)
-            const headerCells = document.querySelectorAll('#resultsTable thead tr:first-child th');
+        // Populate results table using Grid.js
+        function populateResultsTable(data) {
+            // Clear previous grid
+            const wrapper = document.getElementById('gridjs-wrapper');
+            if (wrapper) {
+                wrapper.innerHTML = '';
+            }
             
-            // Add resizers to all columns except checkbox and actions
-            headerCells.forEach((th, i) => {
-                if (i === 0 || i === headerCells.length - 1) return; // Skip first and last columns
+            // Define column handlers for Grid.js
+            function formatResultsAvailable(value) {
+                if (!value) return '';
                 
-                // Create resizer element
-                const resizer = document.createElement('div');
-                resizer.classList.add('table-resizer');
-                th.appendChild(resizer);
+                if (value.toLowerCase() === 'yes') {
+                    return '<span class="badge bg-success">Yes</span>';
+                } else if (value.toLowerCase() === 'no') {
+                    return '<span class="badge bg-secondary">No</span>';
+                }
+                return value;
+            }
+            
+            function formatEndpointMet(value) {
+                if (!value) return '';
                 
-                // Initialize variables for resizing
-                let startX, startWidth;
+                if (value.toLowerCase() === 'yes') {
+                    return '<span class="badge bg-success">Yes</span>';
+                } else if (value.toLowerCase() === 'no') {
+                    return '<span class="badge bg-danger">No</span>';
+                } else if (value.toLowerCase() === 'na') {
+                    return '<span class="badge bg-secondary">N/A</span>';
+                }
+                return value;
+            }
+            
+            // Create Grid.js instance
+            grid = new gridjs.Grid({
+                columns: [
+                    { 
+                        name: '',
+                        id: 'checkbox',
+                        width: '40px',
+                        attributes: {
+                            'data-column-id': 'checkbox'
+                        },
+                        formatter: (cell, row) => {
+                            const index = row.cells[1].data ? data.findIndex(item => item.Title === row.cells[1].data) : 0;
+                            return gridjs.h('div', { className: 'form-check d-flex justify-content-center' }, [
+                                gridjs.h('input', { 
+                                    type: 'checkbox',
+                                    className: 'form-check-input select-row',
+                                    'data-index': index,
+                                    onClick: (e) => {
+                                        if (e.target.checked) {
+                                            selectedRows.add(index);
+                                        } else {
+                                            selectedRows.delete(index);
+                                            // Uncheck "select all" if needed
+                                            const selectAllCheckbox = document.getElementById('selectAll');
+                                            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                                        }
+                                        updateSelectionUI();
+                                    }
+                                })
+                            ]);
+                        }
+                    },
+                    { 
+                        name: 'Title',
+                        id: 'Title',
+                        attributes: {
+                            'data-column-id': 'Title'
+                        },
+                        formatter: (cell) => gridjs.html(cell || '<span class="text-muted">No title</span>')
+                    },
+                    { 
+                        name: 'PMID', 
+                        id: 'PMID',
+                        attributes: {
+                            'data-column-id': 'PMID'
+                        },
+                        formatter: (cell) => {
+                            if (!cell || cell === 'N/A') return gridjs.html('<span class="text-muted">N/A</span>');
+                            return gridjs.html(`<a href="https://pubmed.ncbi.nlm.nih.gov/${cell}" target="_blank">${cell}</a>`);
+                        }
+                    },
+                    { 
+                        name: 'Subject of Study',
+                        id: 'Subject of Study',
+                        attributes: {
+                            'data-column-id': 'Subject of Study'
+                        },
+                        data: (row) => row['Subject of Study'] || '' 
+                    },
+                    { 
+                        name: 'Disease State',
+                        id: 'Disease State',
+                        attributes: {
+                            'data-column-id': 'Disease State'
+                        },
+                        data: (row) => row['Disease State'] || '' 
+                    },
+                    { 
+                        name: 'Number of Subjects',
+                        id: 'Number of Subjects Studied',
+                        attributes: {
+                            'data-column-id': 'Number of Subjects Studied'
+                        },
+                        data: (row) => row['Number of Subjects Studied'] || '' 
+                    },
+                    { 
+                        name: 'Type of Study',
+                        id: 'Type of Study',
+                        attributes: {
+                            'data-column-id': 'Type of Study'
+                        },
+                        data: (row) => row['Type of Study'] || '' 
+                    },
+                    { 
+                        name: 'Intervention',
+                        id: 'Intervention',
+                        attributes: {
+                            'data-column-id': 'Intervention'
+                        },
+                        data: (row) => row['Intervention'] || '' 
+                    },
+                    { 
+                        name: 'Results Available',
+                        id: 'Results Available',
+                        attributes: {
+                            'data-column-id': 'Results Available'
+                        },
+                        formatter: (cell, row) => gridjs.html(formatResultsAvailable(row['Results Available']))
+                    },
+                    { 
+                        name: 'Primary Endpoint Met',
+                        id: 'Primary Endpoint Met',
+                        attributes: {
+                            'data-column-id': 'Primary Endpoint Met'
+                        },
+                        formatter: (cell, row) => gridjs.html(formatEndpointMet(row['Primary Endpoint Met']))
+                    },
+                    { 
+                        name: 'Actions',
+                        id: 'actions',
+                        width: '80px',
+                        attributes: {
+                            'data-column-id': 'actions'
+                        },
+                        formatter: (cell, row) => {
+                            const index = row.cells[1].data ? data.findIndex(item => item.Title === row.cells[1].data) : 0;
+                            return gridjs.h('button', {
+                                className: 'btn btn-sm btn-primary view-details',
+                                'data-index': index,
+                                title: 'View Details',
+                                onClick: () => showResultDetails(resultsData[index])
+                            }, [
+                                gridjs.h('i', { className: 'fas fa-eye' })
+                            ]);
+                        }
+                    }
+                ],
+                data: applyFilters(data),
+                search: false, // We'll use our own column filters instead
+                sort: true,
+                pagination: {
+                    limit: 10,
+                    summary: true,
+                    enabled: true
+                },
+                width: '100%',
+                className: {
+                    table: 'table table-striped table-bordered table-hover w-100',
+                    thead: 'table-light',
+                    container: 'mb-3',
+                    paginationSummary: 'text-muted'
+                },
+                style: {
+                    table: {
+                        width: '100%'
+                    },
+                    th: {
+                        'position': 'relative'
+                    }
+                },
+                language: {
+                    pagination: {
+                        previous: '‹',
+                        next: '›',
+                        showing: 'Showing',
+                        of: 'of',
+                        to: 'to',
+                        results: 'results'
+                    }
+                }
+            }).render(document.getElementById('gridjs-wrapper'));
+            
+            // Add select all checkbox and initialize other features after Grid.js renders
+            setTimeout(() => {
+                // Add select all checkbox
+                const headerRow = document.querySelector('.gridjs-thead tr');
+                if (headerRow) {
+                    const firstCell = headerRow.querySelector('th');
+                    if (firstCell) {
+                        // Create select all checkbox
+                        const selectAllDiv = document.createElement('div');
+                        selectAllDiv.className = 'form-check d-flex justify-content-center';
+                        selectAllDiv.innerHTML = `
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                            <label class="form-check-label visually-hidden" for="selectAll">Select All</label>
+                        `;
+                        firstCell.appendChild(selectAllDiv);
+                        
+                        // Add event listener for select all
+                        document.getElementById('selectAll').addEventListener('change', function() {
+                            const isChecked = this.checked;
+                            
+                            // Get all checkboxes in the current filtered view
+                            const checkboxes = document.querySelectorAll('.select-row');
+                            
+                            checkboxes.forEach((checkbox) => {
+                                checkbox.checked = isChecked;
+                                const index = parseInt(checkbox.getAttribute('data-index'));
+                                
+                                if (isChecked) {
+                                    selectedRows.add(index);
+                                } else {
+                                    selectedRows.delete(index);
+                                }
+                            });
+                            
+                            updateSelectionUI();
+                        });
+                    }
+                }
                 
-                // Mouse down event handler
-                const mouseDownHandler = function(e) {
-                    startX = e.clientX;
-                    startWidth = parseInt(window.getComputedStyle(th).width);
-                    resizer.classList.add('resizing');
-                    
-                    // Add event listeners for mouse movement and mouse up
-                    document.addEventListener('mousemove', mouseMoveHandler);
-                    document.addEventListener('mouseup', mouseUpHandler);
-                    
-                    // Prevent text selection during resize
-                    e.preventDefault();
-                };
+                // Initialize resizable columns
+                initResizableColumns();
                 
-                // Mouse move event handler
-                const mouseMoveHandler = function(e) {
-                    // Calculate width change
-                    const widthChange = e.clientX - startX;
-                    
-                    // Calculate new width (minimum 80px)
-                    const newWidth = Math.max(80, startWidth + widthChange);
-                    
-                    // Apply new width to the column
-                    th.style.width = `${newWidth}px`;
-                    th.style.minWidth = `${newWidth}px`;
-                    
-                    // Force redraw
-                    dataTable.columns.adjust();
-                };
+                // Add column filters
+                addColumnFilters();
                 
-                // Mouse up event handler
-                const mouseUpHandler = function() {
-                    resizer.classList.remove('resizing');
-                    
-                    // Remove event listeners
-                    document.removeEventListener('mousemove', mouseMoveHandler);
-                    document.removeEventListener('mouseup', mouseUpHandler);
-                    
-                    // Update DataTable's column sizing
-                    dataTable.columns.adjust();
-                };
+                // Add click event for details buttons
+                document.querySelectorAll('.view-details').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        showResultDetails(resultsData[index]);
+                    });
+                });
                 
-                // Add mouse down event listener to resizer
-                resizer.addEventListener('mousedown', mouseDownHandler);
-            });
+                // Initial setup for selection UI
+                updateSelectionUI();
+            }, 100);
         }
         
         // Update the selection UI elements
@@ -499,33 +788,150 @@
                 $('#downloadSelectedBtn').prop('disabled', true);
             }
             
-            // Check "select all" if all rows are selected
-            const totalRows = $('.select-row').length;
-            $('#selectAll').prop('checked', count > 0 && count === totalRows);
+            // Check if select all should be checked (all visible rows selected)
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) {
+                const visibleCheckboxes = document.querySelectorAll('.select-row');
+                const allChecked = visibleCheckboxes.length > 0 && 
+                                  Array.from(visibleCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            }
         }
         
         // Clear selection
         $('#clearSelectionBtn').on('click', function() {
             selectedRows.clear();
-            $('.select-row').prop('checked', false);
-            $('#selectAll').prop('checked', false);
+            document.querySelectorAll('.select-row').forEach(cb => {
+                cb.checked = false;
+            });
+            
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            
             updateSelectionUI();
         });
         
-        // Show result details in modal
+        // Show result details in modal (keeping the original function)
         function showResultDetails(result) {
-            let content = '<div class="table-responsive"><table class="table table-bordered">';
+            let content = '';
+            
+            // Handle special case for PDF files
+            if (result.Filename) {
+                content += '<div class="alert alert-info mb-3">' +
+                           '<strong><i class="fas fa-file-pdf me-2"></i>File:</strong> ' + result.Filename +
+                           '</div>';
+            }
+            
+            // Create a tabbed interface for organization
+            content += '<ul class="nav nav-tabs mb-3" id="resultDetailTabs" role="tablist">' +
+                      '<li class="nav-item" role="presentation">' +
+                      '<button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">Overview</button>' +
+                      '</li>' +
+                      '<li class="nav-item" role="presentation">' +
+                      '<button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">Full Details</button>' +
+                      '</li>' +
+                      '</ul>';
+                      
+            content += '<div class="tab-content" id="resultDetailTabsContent">';
+            
+            // Overview tab with key information
+            content += '<div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">';
+            
+            // Title and citation
+            content += '<h4 class="mb-3">' + (result.Title || 'No Title') + '</h4>';
+            
+            if (result.PMID && result.PMID !== 'N/A') {
+                content += '<p><strong>PMID:</strong> <a href="https://pubmed.ncbi.nlm.nih.gov/' + result.PMID + '" target="_blank">' + result.PMID + '</a></p>';
+            }
+            
+            if (result['Journal Name'] || result['Date of Publication'] || result['Main Author']) {
+                let citation = '';
+                if (result['Main Author']) citation += result['Main Author'];
+                if (result['Other Authors']) citation += ', ' + result['Other Authors'];
+                if (result['Journal Name']) citation += '. ' + result['Journal Name'];
+                if (result['Date of Publication']) citation += '. ' + result['Date of Publication'];
+                
+                content += '<p class="text-muted">' + citation + '</p>';
+            }
+            
+            // Key information cards
+            content += '<div class="row mt-4">';
+            
+            // Study type card
+            content += '<div class="col-md-6 mb-3">' +
+                      '<div class="card h-100">' +
+                      '<div class="card-header bg-primary text-white"><i class="fas fa-flask me-2"></i>Study Information</div>' +
+                      '<div class="card-body">' +
+                      '<p><strong>Subject of Study:</strong> ' + (result['Subject of Study'] || 'Not specified') + '</p>' +
+                      '<p><strong>Type of Study:</strong> ' + (result['Type of Study'] || 'Not specified') + '</p>' +
+                      '<p><strong>Study Design:</strong> ' + (result['Study Design'] || 'Not specified') + '</p>' +
+                      '<p><strong>Disease State:</strong> ' + (result['Disease State'] || 'Not specified') + '</p>' +
+                      '<p><strong>Number of Subjects:</strong> ' + (result['Number of Subjects Studied'] || 'Not specified') + '</p>' +
+                      '</div></div></div>';
+            
+            // Intervention card
+            content += '<div class="col-md-6 mb-3">' +
+                      '<div class="card h-100">' +
+                      '<div class="card-header bg-success text-white"><i class="fas fa-capsules me-2"></i>Intervention</div>' +
+                      '<div class="card-body">' +
+                      '<p><strong>Intervention:</strong> ' + (result['Intervention'] || 'Not specified') + '</p>' +
+                      '<p><strong>Dose:</strong> ' + (result['Intervention Dose'] || 'Not specified') + '</p>' +
+                      '<p><strong>Dosage Form:</strong> ' + (result['Intervention Dosage Form'] || 'Not specified') + '</p>' +
+                      '<p><strong>Control:</strong> ' + (result['Control'] || 'Not specified') + '</p>' +
+                      '</div></div></div>';
+            
+            // Results card
+            content += '<div class="col-md-6 mb-3">' +
+                      '<div class="card h-100">' +
+                      '<div class="card-header bg-info text-white"><i class="fas fa-chart-bar me-2"></i>Outcomes</div>' +
+                      '<div class="card-body">' +
+                      '<p><strong>Primary Endpoint:</strong> ' + (result['Primary Endpoint'] || 'Not specified') + '</p>' +
+                      '<p><strong>Primary Endpoint Result:</strong> ' + (result['Primary Endpoint Result'] || 'Not specified') + '</p>' +
+                      '<p><strong>Results Available:</strong> ' + (result['Results Available'] || 'Not specified') + '</p>' +
+                      '<p><strong>Primary Endpoint Met:</strong> ' + (result['Primary Endpoint Met'] || 'Not specified') + '</p>' +
+                      '</div></div></div>';
+            
+            // Statistical data card
+            content += '<div class="col-md-6 mb-3">' +
+                      '<div class="card h-100">' +
+                      '<div class="card-header bg-warning text-dark"><i class="fas fa-calculator me-2"></i>Statistical Data</div>' +
+                      '<div class="card-body">' +
+                      '<p><strong>Statistical Significance:</strong> ' + (result['Statistical Significance'] || 'Not specified') + '</p>' +
+                      '<p><strong>Clinical Significance:</strong> ' + (result['Clinical Significance'] || 'Not specified') + '</p>' +
+                      '<p><strong>Secondary Endpoints:</strong> ' + (result['Secondary Endpoints'] || 'Not specified') + '</p>' +
+                      '<p><strong>Safety Endpoints:</strong> ' + (result['Safety Endpoints'] || 'Not specified') + '</p>' +
+                      '</div></div></div>';
+            
+            // Conclusion
+            if (result['Conclusion']) {
+                content += '<div class="col-12 mb-3">' +
+                          '<div class="card">' +
+                          '<div class="card-header bg-secondary text-white"><i class="fas fa-lightbulb me-2"></i>Conclusion</div>' +
+                          '<div class="card-body">' + result['Conclusion'] + '</div>' +
+                          '</div></div>';
+            }
+            
+            content += '</div>'; // End of row
+            content += '</div>'; // End of overview tab
+            
+            // Details tab with all fields in a table
+            content += '<div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">';
+            content += '<div class="table-responsive"><table class="table table-striped table-bordered">';
             
             for (let key in result) {
-                if (result.hasOwnProperty(key)) {
-                    content += `<tr>
-                        <th style="width: 30%">${key}</th>
-                        <td>${result[key] || ''}</td>
-                    </tr>`;
+                if (result.hasOwnProperty(key) && key !== 'Error') {
+                    content += '<tr>' +
+                              '<th style="width: 30%; background-color: #f8f9fa;">' + key + '</th>' +
+                              '<td>' + (result[key] || '') + '</td>' +
+                              '</tr>';
                 }
             }
             
             content += '</table></div>';
+            content += '</div>'; // End of details tab
+            
+            content += '</div>'; // End of tab content
+            
             $('#resultDetailContent').html(content);
             
             // Show the modal
@@ -576,6 +982,13 @@
                     window.location.href = '{{ url_for("main.index") }}';
                 }
             });
+        });
+        
+        // Handle window resize to reinitialize resizable columns
+        window.addEventListener('resize', function() {
+            if (grid) {
+                setTimeout(initResizableColumns, 100);
+            }
         });
     });
 </script>

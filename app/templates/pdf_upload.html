@@ -1,77 +1,105 @@
 {% extends 'base.html' %}
 
-{% block title %}PDF Upload - Clinical Research Analysis Tool{% endblock %}
+{% block title %}CLARA - PDF Upload{% endblock %}
 
 {% block content %}
-<div class="card shadow-lg">
-    <div class="card-header bg-primary text-white">
-        <h2 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Clinical Trial PDF Analysis</h2>
-    </div>
-    <div class="card-body">
-        <p class="lead">Upload PDF documents containing clinical trial information for AI analysis.</p>
-        
-        <form method="POST" action="{{ url_for('main.pdf_upload') }}" enctype="multipart/form-data" id="uploadForm">
-            {{ form.csrf_token }}
-            
-            <div class="mb-4">
-                <label class="form-label d-block">{{ form.files.label }}</label>
-                <div class="custom-file-upload" id="file-dropzone">
-                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-                    <p class="mb-0">Drag and drop files here or click to browse</p>
-                    <small class="text-muted d-block mt-2">Supported formats: PDF, PNG, JPG</small>
+<div class="docs-markdown-page docs-markdown-content">
+    <div class="flex w-full items-start">
+        <div class="docs-markdown-page-inner">
+            <div>
+                <div class="title-container flex flex-col items-baseline justify-between lg:flex-row">
+                    <div class="order-2 lg:order-1">
+                        <h1 id="page-top" class="docs-markdown-page-title">PDF Upload</h1>
+                        <div class="docs-markdown-page-subtitle">Upload and analyze clinical trial PDFs with AI</div>
+                    </div>
                 </div>
-                {{ form.files(id="file-input", style="position: absolute; left: -9999px;") }}
-                <div id="file-list" class="mt-3">
-                    <!-- Selected files will appear here -->
-                </div>
-                {% if form.files.errors %}
-                <div class="invalid-feedback d-block mt-2">
-                    {% for error in form.files.errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-            
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="form-check">
-                        {{ form.use_ocr(class="form-check-input") }}
-                        <label class="form-check-label" for="use_ocr">
-                            {{ form.use_ocr.label.text }}
-                        </label>
-                        <div class="form-text">
-                            Enable for scanned documents or images where text cannot be directly extracted
+
+                <p>Upload PDF documents containing clinical trial information for comprehensive AI analysis. The system will extract key study parameters, methodologies, and results.</p>
+
+                <form method="POST" action="{{ url_for('main.pdf_upload') }}" enctype="multipart/form-data" id="uploadForm">
+                    {{ form.csrf_token }}
+
+                    <div class="card">
+                        <div class="card-header" style="background-color: var(--color-bg-secondary); border-color: var(--color-border);">
+                            <h3>File Upload</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">{{ form.files.label }}</label>
+                                <div class="custom-file-upload" id="file-dropzone">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+                                    <p style="margin: 0 0 8px 0; font-weight: 500;">Drag and drop files here or click to browse</p>
+                                    <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary);">Supported formats: PDF, PNG, JPG</p>
+                                </div>
+                                {{ form.files(id="file-input", style="display: none;", multiple="multiple") }}
+                                <div id="file-list" style="margin-top: 16px;">
+                                    <!-- Selected files will appear here -->
+                                </div>
+                                {% if form.files.errors %}
+                                <div class="alert alert-error" style="margin-top: 16px;">
+                                    {% for error in form.files.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="col-md-6" id="language-selector" style="display: none;">
-                    <label class="form-label">{{ form.language.label }}</label>
-                    {{ form.language(class="form-select") }}
-                    <div class="form-text">
-                        Select the primary language of the document for OCR processing
+
+                    <div class="card">
+                        <div class="card-header" style="background-color: var(--color-bg-secondary); border-color: var(--color-border);">
+                            <h3>Analysis Options</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <div style="margin-bottom: 16px;">
+                                        <input type="checkbox" id="use_ocr" name="use_ocr" style="margin-right: 8px;">
+                                        <label for="use_ocr" style="font-weight: 500;">Enable OCR Processing</label>
+                                    </div>
+                                    <p style="font-size: 14px; color: var(--color-text-secondary); margin: 0;">
+                                        Enable for scanned documents or images where text cannot be directly extracted
+                                    </p>
+                                </div>
+
+                                <div id="language-selector" style="display: none;">
+                                    <label class="form-label">Document Language</label>
+                                    <select name="language" class="form-control">
+                                        <option value="eng">English</option>
+                                        <option value="spa">Spanish</option>
+                                        <option value="fra">French</option>
+                                        <option value="deu">German</option>
+                                        <option value="ita">Italian</option>
+                                    </select>
+                                    <p style="font-size: 14px; color: var(--color-text-secondary); margin: 8px 0 0 0;">
+                                        Select the primary language of the document for OCR processing
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    <div class="alert alert-info">
+                        <div>
+                            <h4>Analysis Information</h4>
+                            <p>The AI will analyze the uploaded documents to extract information such as:</p>
+                            <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                                <li>Study design and methodology</li>
+                                <li>Patient population and demographics</li>
+                                <li>Interventions and treatments</li>
+                                <li>Primary and secondary outcomes</li>
+                                <li>Statistical analyses and results</li>
+                            </ul>
+                            <p style="margin: 8px 0 0 0;">For best results, upload clearly formatted clinical trial documents.</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 32px;">
+                        {{ form.submit(class="btn btn-solid", id="submit-btn", disabled="disabled", style="padding: 12px 24px; font-size: 16px;") }}
+                    </div>
+                </form>
             </div>
-            
-            <div class="alert alert-info">
-                <h5><i class="fas fa-info-circle me-2"></i>PDF Analysis Information</h5>
-                <p>The AI will analyze the uploaded documents to extract information such as:</p>
-                <ul>
-                    <li>Study design and methodology</li>
-                    <li>Patient population and demographics</li>
-                    <li>Interventions and treatments</li>
-                    <li>Primary and secondary outcomes</li>
-                    <li>Statistical analyses and results</li>
-                </ul>
-                <p class="mb-0">For best results, upload clearly formatted clinical trial documents.</p>
-            </div>
-            
-            <div class="d-grid gap-2 col-lg-4 col-md-6 mx-auto mt-4">
-                {{ form.submit(class="btn btn-primary btn-lg", id="submit-btn", disabled="disabled") }}
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -86,9 +114,6 @@
         const ocrCheckbox = $('#use_ocr');
         const languageSelector = $('#language-selector');
         const uploadForm = $('#uploadForm');
-        
-        // Store the DataTransfer object for managing files
-        const dataTransfer = new DataTransfer();
         
         // Toggle language selector based on OCR checkbox
         ocrCheckbox.on('change', function() {
@@ -107,49 +132,30 @@
         // Handle drag and drop events
         dropzone.on('dragover', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropzone.addClass('dragover');
         });
         
         dropzone.on('dragleave', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropzone.removeClass('dragover');
         });
         
         dropzone.on('drop', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropzone.removeClass('dragover');
             
             if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files.length) {
-                // Add new files to our collection
-                const newFiles = e.originalEvent.dataTransfer.files;
-                for (let i = 0; i < newFiles.length; i++) {
-                    // Check if it's a valid file type
-                    const fileType = newFiles[i].type;
-                    if (fileType === 'application/pdf' || fileType.startsWith('image/')) {
-                        dataTransfer.items.add(newFiles[i]);
-                    }
-                }
-                
-                // Update the file input with all files
-                fileInput[0].files = dataTransfer.files;
+                // Update the file input with dropped files
+                fileInput[0].files = e.originalEvent.dataTransfer.files;
                 updateFileList();
             }
         });
         
         // Handle file selection via file dialog
         fileInput.on('change', function(e) {
-            // Add new files to our collection
-            const newFiles = e.target.files;
-            for (let i = 0; i < newFiles.length; i++) {
-                // Check if it's a valid file type
-                const fileType = newFiles[i].type;
-                if (fileType === 'application/pdf' || fileType.startsWith('image/')) {
-                    dataTransfer.items.add(newFiles[i]);
-                }
-            }
-            
-            // Update the file input with all files
-            fileInput[0].files = dataTransfer.files;
             updateFileList();
         });
         
@@ -169,18 +175,17 @@
                     const file = files[i];
                     const fileSize = formatFileSize(file.size);
                     const fileType = file.type.split('/')[1].toUpperCase();
-                    const fileIndex = i;
                     
                     const listItem = `
                         <div class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                <i class="fas ${file.type.includes('pdf') ? 'fa-file-pdf text-danger' : 'fa-file-image text-primary'} me-2"></i>
                                 <span>${file.name}</span>
                             </div>
                             <div class="d-flex align-items-center">
                                 <span class="badge bg-secondary me-2">${fileType}</span>
                                 <span class="badge bg-info me-3">${fileSize}</span>
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${fileIndex}">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${i}">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -205,24 +210,19 @@
         
         // Remove a file from the list
         function removeFile(index) {
-            // Create a new DataTransfer object
-            const newDataTransfer = new DataTransfer();
+            // Create a new FileList (using DataTransfer as a container)
+            const dt = new DataTransfer();
+            const files = fileInput[0].files;
             
             // Add all files except the one to remove
-            for (let i = 0; i < dataTransfer.files.length; i++) {
+            for (let i = 0; i < files.length; i++) {
                 if (i !== index) {
-                    newDataTransfer.items.add(dataTransfer.files[i]);
+                    dt.items.add(files[i]);
                 }
             }
             
-            // Update our dataTransfer object
-            dataTransfer.items.clear();
-            for (let i = 0; i < newDataTransfer.files.length; i++) {
-                dataTransfer.items.add(newDataTransfer.files[i]);
-            }
-            
             // Update the file input
-            fileInput[0].files = dataTransfer.files;
+            fileInput[0].files = dt.files;
             
             // Update the display
             updateFileList();
