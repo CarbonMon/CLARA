@@ -5,8 +5,18 @@ from anthropic import Anthropic
 from typing import Dict, Any, Optional
 import logging
 from app.utils.prompts import get_base_analysis_prompt, get_pdf_prompt_addition, get_claude_specific_instructions
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = logging.getLogger(__name__)
+
+# Rate limiting configuration (same as OpenAI)
+RATE_LIMIT_CONFIG = {
+    'max_retries': 5,
+    'min_wait_time': 30,  # seconds
+    'max_wait_time': 60,  # seconds
+    'exponential_multiplier': 1,
+    'extra_rate_limit_delay': 2  # additional seconds for rate limit errors
+}
 
 def create_claude_client(api_key: str) -> Anthropic:
     """Create and return an Anthropic client"""
@@ -53,7 +63,7 @@ def analyze_paper_with_claude(
     model: str = "claude-3-sonnet-20240229"
 ) -> Dict[str, Any]:
     """
-    Analyze a paper using Claude
+    Analyze a paper using Claude with rate limiting and retry logic
     
     Args:
         client: Anthropic client
@@ -63,6 +73,36 @@ def analyze_paper_with_claude(
         
     Returns:
         Analyzed paper data as dictionary
+    """
+    return call_claude_with_retry(client, paper_content, is_pdf, model)
+
+@retry(
+    retry=retry_if_exception_type((
+        Exception,  # Catch all exceptions initially, then filter
+    )),
+    stop=stop_after_attempt(RATE_LIMIT_CONFIG['max_retries']),
+    wait=wait_exponential(
+        multiplier=RATE_LIMIT_CONFIG['exponential_multiplier'], 
+        min=RATE_LIMIT_CONFIG['min_wait_time'], 
+        max=RATE_LIMIT_CONFIG['max_wait_time']
+    ),
+    reraise=True
+)
+def call_claude_with_retry(client: Anthropic, paper_content: Any, is_pdf: bool = False, model: str = "claude-3-sonnet-20240229") -> Dict[str, Any]:
+    """
+    Make Claude API calls with automatic retry and rate limit handling.
+    
+    Args:
+        client: Anthropic client instance
+        paper_content: Content to analyze
+        is_pdf: Whether the content is from a PDF
+        model: Claude model to use
+    
+    Returns:
+        Claude completion response
+    
+    Raises:
+        Exception: After all retry attempts are exhausted
     """
     try:
         system_prompt = get_analysis_prompt(is_pdf)
@@ -106,8 +146,43 @@ def analyze_paper_with_claude(
             }
             
     except Exception as e:
-        logger.error(f"Error analyzing paper with Claude: {e}")
-        return {
-            "Title": "Error analyzing document",
-            "Error": str(e)
-        }
+        error_message = str(e).lower()
+        
+        # Check for rate limit errors
+        if any(rate_limit_indicator in error_message for rate_limit_indicator in [
+            'rate limit', 'too many requests', '429', 'quota exceeded', 
+            'requests per minute', 'tokens per minute'
+        ]):
+            logger.warning(f"Rate limit hit: {e}. Retrying with backoff...")
+            # Add extra delay for rate limits
+            import time
+            time.sleep(RATE_LIMIT_CONFIG['extra_rate_limit_delay'])
+            raise e  # Re-raise to trigger retry
+        
+        # Check for budget/quota exhaustion (don't retry, mark for manual key entry)
+        elif any(budget_error in error_message for budget_error in [
+            'quota exceeded', 'billing', 'payment', 'insufficient funds', 
+            'budget exceeded', 'usage limit', 'account suspended'
+        ]):
+            logger.error(f"Budget/quota exhausted: {e}")
+            raise e  # Don't retry, let user handle manually
+        
+        # Check for server errors that should be retried
+        elif any(server_error in error_message for server_error in [
+            '500', '502', '503', '504', 'internal server error', 
+            'bad gateway', 'service unavailable', 'gateway timeout'
+        ]):
+            logger.warning(f"Server error: {e}. Retrying...")
+            raise e  # Re-raise to trigger retry
+        
+        # Check for authentication errors (don't retry)
+        elif any(auth_error in error_message for auth_error in [
+            'unauthorized', '401', 'invalid api key', 'authentication'
+        ]):
+            logger.error(f"Authentication error (not retrying): {e}")
+            raise e  # Re-raise without retry
+        
+        # For other errors, log and re-raise to trigger retry
+        else:
+            logger.warning(f"API error: {e}. Retrying...")
+            raise e

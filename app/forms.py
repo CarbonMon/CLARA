@@ -21,9 +21,15 @@ class APISettingsForm(FlaskForm):
 class PubMedSearchForm(FlaskForm):
     """Form for PubMed search"""
     query = StringField('Search Query', validators=[DataRequired()])
+    search_mode = SelectField('Search Mode', 
+                             choices=[
+                                 ('full', 'Full Analysis (All Results)'),
+                                 ('partial', 'Partial Analysis (Limited Results)')
+                             ],
+                             default='full')
     max_results = IntegerField('Max Results', 
                               validators=[
-                                  DataRequired(),
+                                  Optional(),
                                   NumberRange(min=1, max=Config.MAX_PUBMED_RESULTS)
                               ],
                               default=Config.DEFAULT_PUBMED_RESULTS)

@@ -7,27 +7,39 @@
     <div class="settings-header">
         <div class="settings-title">
             <i class="fas fa-key settings-icon"></i>
-            <h1>API Configuration</h1>
-            <p class="settings-subtitle">Configure your AI model providers and credentials</p>
+            <div>
+                <h1 style="color: var(--color-text-emphasis);">API Configuration</h1>
+                <p class="settings-subtitle" style="color: var(--color-text-secondary);">Configure your AI model providers and credentials</p>
+            </div>
         </div>
     </div>
 
-    <div class="settings-card">
-        <div class="card-header">
-            <h3><i class="fas fa-key me-2"></i>API Credentials</h3>
-        </div>
-        <div class="card-body">
-            {% if session.get('api_key_valid') %}
-            <div class="alert alert-success mb-4">
-                <i class="fas fa-check-circle me-2"></i>
-                <strong>{{ session.get('api_provider')|capitalize }} API is configured and validated!</strong>
+        <div class="settings-card">
+            <div class="card-header">
+                <h3><i class="fas fa-key me-2"></i>API Credentials</h3>
             </div>
-            {% else %}
-            <div class="alert alert-info mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                Please configure your API settings to use the analysis tools
-            </div>
-            {% endif %}
+            <div class="card-body">
+                {% if session.get('api_key_valid') %}
+                <div class="alert alert-success mb-4">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>{{ session.get('api_provider')|capitalize }} API is configured and validated!</strong>
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please configure your API settings to use the analysis tools
+                </div>
+                {% endif %}
+                
+                {% if openai_key_available or anthropic_key_available %}
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-file-alt me-2"></i>
+                    <strong>.env Configuration Detected:</strong>
+                    {% if openai_key_available %}<span class="badge bg-primary">OpenAI</span>{% endif %}
+                    {% if anthropic_key_available %}<span class="badge bg-info">Anthropic</span>{% endif %}
+                    API keys found in .env file. Settings will be auto-configured on save.
+                </div>
+                {% endif %}
             
             <form method="POST" action="{{ url_for('main.settings') }}" class="api-form">
                 {{ form.csrf_token }}

@@ -4,48 +4,117 @@
 
 {% block content %}
 <div class="card shadow-lg">
-    <div class="card-header" style="background-color: var(--color-accent); color: white; border-color: var(--color-accent);">
-        <h2 class="mb-0"><i class="fas fa-search me-2"></i>PubMed Clinical Trial Analysis</h2>
+    <div class="card-header pubmed-header" style="background-color: var(--color-accent); color: white; border-color: var(--color-accent);">
+        <h2 class="mb-0" style="color: white;"><i class="fas fa-search me-2"></i>PubMed Clinical Trial Analysis</h2>
     </div>
     <div class="card-body">
-        <p class="lead">Search PubMed for clinical trials and analyze them with AI.</p>
+        <p class="lead" style="color: var(--color-text-primary);">Search PubMed for clinical trials and analyze them with AI.</p>
         
-        <form method="POST" action="{{ url_for('main.pubmed_search') }}">
+        <form method="POST" action="{{ url_for('main.pubmed_search') }}" id="pubmedSearchForm">
             {{ form.csrf_token }}
             
-            <div class="row">
-                <div class="col-md-8 mb-3">
-                    <label class="form-label">{{ form.query.label }}</label>
-                    {{ form.query(class="form-control", placeholder="e.g., loratadine, cancer, etc.") }}
-                    <div class="form-text">
-                        Enter a search term to find clinical trials in PubMed. The search will be filtered to clinical trials only.
+            <!-- Search Query -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label for="query" class="form-label">
+                            <i class="fas fa-search me-2"></i>
+                            Search Query
+                        </label>
+                        {{ form.query(class="form-control form-control-lg", placeholder="Enter your PubMed search query (e.g., 'asthma clinical trials')", id="query") }}
+                        <div class="form-text">Enter your search terms. Use AND, OR, NOT for complex queries.</div>
                     </div>
-                    {% if form.query.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in form.query.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">{{ form.max_results.label }}</label>
-                    {{ form.max_results(class="form-control", type="number") }}
-                    <div class="form-text">
-                        Maximum number of papers to retrieve and analyze (1-{{ config['MAX_PUBMED_RESULTS'] }})
-                    </div>
-                    {% if form.max_results.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in form.max_results.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
             </div>
-            
-                <div class="row mt-3">
+
+            <!-- Search Results Count (appears after typing query) -->
+            <div class="row mb-4" id="searchResultsSection" style="display: none;">
+                <div class="col-12">
+                    <div class="alert" id="searchResultsAlert" style="border-left: 4px solid #10b981;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-search me-2"></i>Search Results
+                                </h6>
+                                <p class="mb-0" style="font-size: 0.9rem; color: var(--color-text-secondary);" id="searchResultsText">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Checking PubMed...
+                                </p>
+                            </div>
+                            <div id="searchResultsBadges">
+                                <!-- Badges will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Analysis Button (appears after results are shown) -->
+            <div class="row mb-4" id="startAnalysisSection" style="display: none;">
+                <div class="col-12">
+                    <div class="d-grid gap-2 col-lg-4 col-md-6 mx-auto">
+                        {{ form.submit(class="btn btn-primary btn-lg", id="startAnalysisBtn") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Mode Selection (appears below start button) -->
+            <div class="row mb-4" id="searchModeSection" style="display: none;">
+                <div class="col-md-6 mx-auto">
+                    <div class="card" style="background-color: var(--color-bg-secondary); border-color: var(--color-border);">
+                        <div class="card-header" style="background-color: var(--color-bg-secondary); border-bottom-color: var(--color-border);">
+                            <h6 class="mb-0">
+                                <i class="fas fa-cog me-2"></i>
+                                Search Mode
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                {{ form.search_mode(class="form-select form-select-lg", id="search_mode") }}
+                                <div class="form-text mt-2">Choose between full analysis (all results) or partial analysis (limited results)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partial Analysis Options (Collapsed by default) -->
+            <div class="row mb-4" id="partial-options" style="display: none;">
+                <div class="col-md-8 mx-auto">
+                    <div class="card" style="background-color: var(--color-bg-secondary); border-color: var(--color-border);">
+                        <div class="card-header" style="background-color: var(--color-bg-secondary); border-bottom-color: var(--color-border);">
+                            <h6 class="mb-0">
+                                <i class="fas fa-sliders-h me-2"></i>
+                                Partial Analysis Settings
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="max_results" class="form-label">
+                                            <i class="fas fa-list me-2"></i>
+                                            Max Results
+                                        </label>
+                                        {{ form.max_results(class="form-select form-select-lg") }}
+                                        <div class="form-text">Number of papers to analyze (max 400)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info" style="margin-bottom: 0;">
+                                        <h6><i class="fas fa-info-circle me-2"></i>Partial Analysis</h6>
+                                        <p class="mb-0" style="font-size: 0.9rem;">
+                                            When using partial analysis, only the specified number of results will be analyzed.
+                                            This is useful when you want to quickly review a subset of papers before committing to a full analysis.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-6">
                     <div class="alert alert-info">
                         <h5><i class="fas fa-info-circle me-2"></i>Search Tips</h5>
@@ -73,11 +142,194 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="d-grid gap-2 col-lg-4 col-md-6 mx-auto mt-4">
-                {{ form.submit(class="btn btn-primary btn-lg") }}
-            </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const queryInput = document.getElementById('query');
+    const searchModeSelect = document.getElementById('search_mode');
+    const partialOptions = document.getElementById('partial-options');
+    const searchResultsSection = document.getElementById('searchResultsSection');
+    const searchResultsAlert = document.getElementById('searchResultsAlert');
+    const searchResultsText = document.getElementById('searchResultsText');
+    const searchResultsBadges = document.getElementById('searchResultsBadges');
+    const startAnalysisSection = document.getElementById('startAnalysisSection');
+    const startAnalysisBtn = document.getElementById('startAnalysisBtn');
+    const searchModeSection = document.getElementById('searchModeSection');
+    
+    let debounceTimer;
+    let currentPaperCount = 0;
+    
+    // Function to show/hide partial options based on selection
+    function togglePartialOptions() {
+        if (searchModeSelect && partialOptions) {
+            if (searchModeSelect.value === 'partial') {
+                partialOptions.style.display = 'block';
+            } else {
+                partialOptions.style.display = 'none';
+            }
+        }
+    }
+    
+    // Function to update search results preview
+    function updateSearchResults() {
+        const query = queryInput.value.trim();
+        
+        if (!query) {
+            // Hide all sections if no query
+            searchResultsSection.style.display = 'none';
+            startAnalysisSection.style.display = 'none';
+            searchModeSection.style.display = 'none';
+            return;
+        }
+        
+        // Show the results section with loading state
+        searchResultsSection.style.display = 'block';
+        searchResultsAlert.className = 'alert alert-info';
+        searchResultsText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Checking PubMed...';
+        searchResultsBadges.innerHTML = '';
+        
+        // Hide other sections while loading
+        startAnalysisSection.style.display = 'none';
+        searchModeSection.style.display = 'none';
+        
+        // Make AJAX request to get paper count
+        fetch(`{{ url_for('main.pubmed_count') }}?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentPaperCount = data.count;
+                    
+                    // Update the alert style and content
+                    if (currentPaperCount > 0) {
+                        searchResultsAlert.className = 'alert alert-success';
+                        searchResultsAlert.style.borderLeft = '4px solid #10b981';
+                        searchResultsText.innerHTML = `Found <strong>${currentPaperCount}</strong> papers in PubMed matching your query`;
+                        
+                        // Add badges
+                        let badgesHTML = `<span class="badge bg-primary">${currentPaperCount} total</span>`;
+                        
+                        // Get the current search mode
+                        const searchMode = searchModeSelect.value;
+                        const maxResults = parseInt(document.getElementById('max_results').value);
+                        
+                        if (searchMode === 'full') {
+                            badgesHTML += ' <span class="badge bg-success">All results will be analyzed</span>';
+                        } else {
+                            if (currentPaperCount > maxResults) {
+                                badgesHTML += ` <span class="badge bg-warning">${maxResults} will be analyzed</span>`;
+                            } else {
+                                badgesHTML += ` <span class="badge bg-success">${currentPaperCount} will be analyzed</span>`;
+                            }
+                        }
+                        
+                        searchResultsBadges.innerHTML = badgesHTML;
+                        
+                        // Show start analysis button and search mode section
+                        startAnalysisSection.style.display = 'block';
+                        searchModeSection.style.display = 'block';
+                        startAnalysisBtn.disabled = false;
+                    } else {
+                        searchResultsAlert.className = 'alert alert-warning';
+                        searchResultsAlert.style.borderLeft = '4px solid #fbbf24';
+                        searchResultsText.innerHTML = 'No papers found matching your query. Try different search terms.';
+                        searchResultsBadges.innerHTML = '<span class="badge bg-danger">No results found</span>';
+                        
+                        // Hide start button
+                        startAnalysisSection.style.display = 'none';
+                        searchModeSection.style.display = 'none';
+                        startAnalysisBtn.disabled = true;
+                    }
+                } else {
+                    // Error state
+                    searchResultsAlert.className = 'alert alert-danger';
+                    searchResultsAlert.style.borderLeft = '4px solid #ef4444';
+                    searchResultsText.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.message}`;
+                    searchResultsBadges.innerHTML = '';
+                    
+                    startAnalysisSection.style.display = 'none';
+                    searchModeSection.style.display = 'none';
+                    startAnalysisBtn.disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('Error updating search results:', error);
+                searchResultsAlert.className = 'alert alert-danger';
+                searchResultsAlert.style.borderLeft = '4px solid #ef4444';
+                searchResultsText.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error connecting to PubMed. Please try again.';
+                searchResultsBadges.innerHTML = '';
+                
+                startAnalysisSection.style.display = 'none';
+                searchModeSection.style.display = 'none';
+                startAnalysisBtn.disabled = true;
+            });
+    }
+    
+    // Function to update badges when search mode or max results changes
+    function updateBadges() {
+        if (currentPaperCount === 0) return;
+        
+        const searchMode = searchModeSelect.value;
+        const maxResults = parseInt(document.getElementById('max_results').value);
+        
+        let badgesHTML = `<span class="badge bg-primary">${currentPaperCount} total</span>`;
+        
+        if (searchMode === 'full') {
+            badgesHTML += ' <span class="badge bg-success">All results will be analyzed</span>';
+        } else {
+            if (currentPaperCount > maxResults) {
+                badgesHTML += ` <span class="badge bg-warning">${maxResults} will be analyzed</span>`;
+            } else {
+                badgesHTML += ` <span class="badge bg-success">${currentPaperCount} will be analyzed</span>`;
+            }
+        }
+        
+        searchResultsBadges.innerHTML = badgesHTML;
+    }
+    
+    // Initial check for partial options
+    togglePartialOptions();
+    
+    // Add event listener for search mode changes
+    if (searchModeSelect) {
+        searchModeSelect.addEventListener('change', function() {
+            togglePartialOptions();
+            updateBadges();
+        });
+    }
+    
+    // Add event listener for max results changes
+    const maxResultsSelect = document.getElementById('max_results');
+    if (maxResultsSelect) {
+        maxResultsSelect.addEventListener('change', updateBadges);
+    }
+    
+    // Add event listener for query input changes with debouncing
+    if (queryInput) {
+        queryInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateSearchResults, 500);
+        });
+        
+        // Also trigger on paste events
+        queryInput.addEventListener('paste', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateSearchResults, 300);
+        });
+    }
+    
+    // Prevent form submission if no results
+    document.getElementById('pubmedSearchForm').addEventListener('submit', function(e) {
+        if (currentPaperCount === 0) {
+            e.preventDefault();
+            alert('Please enter a valid search query that returns results before starting analysis.');
+            return false;
+        }
+    });
+});
+</script>
 {% endblock %}

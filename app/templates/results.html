@@ -4,58 +4,75 @@
 
 {% block head %}
 <!-- Grid.js CSS -->
-<link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet">
+<link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
 <!-- Resizable Columns CSS -->
 <link href="https://unpkg.com/jsuites/dist/jsuites.css" rel="stylesheet" type="text/css" />
 <style>
+    /* Disable text selection during column resizing */
+    .disable-select {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
     /* Grid.js styling */
     .gridjs-wrapper {
         border-radius: 0.5rem;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border);
         margin-bottom: 1.5rem;
         overflow: hidden;
         width: 100% !important;
         min-width: 100% !important;
+        background-color: var(--color-bg-primary);
     }
 
     .gridjs-thead th {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-secondary);
         padding: 0.75rem;
         font-weight: 500;
         position: relative;
+        color: var(--color-text-emphasis);
+        border-color: var(--color-border);
     }
 
     .gridjs-tbody td {
         padding: 0.75rem;
         vertical-align: middle;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        border-color: var(--color-border);
     }
 
     .gridjs-pagination {
         padding: 1rem;
-        background-color: #f8f9fa;
-        border-top: 1px solid #dee2e6;
+        background-color: var(--color-bg-secondary);
+        border-top: 1px solid var(--color-border);
+        color: var(--color-text-primary);
     }
 
     .gridjs-pagination .gridjs-summary {
         margin-bottom: 0;
+        color: var(--color-text-secondary);
     }
 
     .gridjs-pagination .gridjs-pages button {
-        background-color: #fff;
-        border: 1px solid #dee2e6;
+        background-color: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
         margin: 0 0.25rem;
         padding: 0.375rem 0.75rem;
         border-radius: 0.25rem;
+        color: var(--color-text-primary);
     }
 
     .gridjs-pagination .gridjs-pages button:hover:not(:disabled) {
-        background-color: #e9ecef;
-        border-color: #dee2e6;
+        background-color: var(--color-bg-secondary);
+        border-color: var(--color-accent);
+        color: var(--color-accent);
     }
 
     .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
+        background-color: var(--color-accent);
+        border-color: var(--color-accent);
         color: #fff;
     }
 
@@ -69,44 +86,65 @@
     }
 
     .gridjs-search-input {
-        border: 1px solid #ced4da;
+        border: 1px solid var(--color-border);
         border-radius: 0.25rem;
         padding: 0.375rem 0.75rem;
         width: 100%;
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
     }
     
     /* Empty state styling */
     #emptyState {
         border-radius: 0.5rem;
         padding: 3rem !important;
+        background-color: var(--color-bg-secondary) !important;
+        color: var(--color-text-primary);
     }
     
     /* Selection toolbar */
     #selectionToolbar {
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
         border-radius: 4px;
         padding: 10px 15px;
         margin-bottom: 15px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        color: var(--color-text-primary);
     }
     
     /* Modal detail styling */
     #resultDetailContent .card {
         margin-bottom: 1rem;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        background-color: var(--color-bg-primary);
+        border-color: var(--color-border);
     }
     
     #resultDetailContent .card-header {
         font-weight: 500;
         padding: 0.75rem 1rem;
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-emphasis);
+    }
+    
+    #resultDetailContent .card-body {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
     }
     
     #resultDetailTabs .nav-link {
         font-weight: 500;
         padding: 0.5rem 1rem;
+        color: var(--color-text-secondary);
+    }
+    
+    #resultDetailTabs .nav-link.active {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-emphasis);
+        border-color: var(--color-border) var(--color-border) var(--color-bg-primary);
     }
     
     /* Badge styling */
@@ -131,12 +169,15 @@
     .gridjs-container {
         width: 100% !important;
         max-width: 100% !important;
+        background-color: var(--color-bg-primary);
     }
     
     .gridjs table {
         width: 100% !important;
         max-width: none !important;
         min-width: 100% !important;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
     }
     
     /* Column resizing styles */
@@ -147,12 +188,12 @@
         bottom: 0;
         width: 5px;
         cursor: col-resize;
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: rgba(128, 128, 128, 0.2);
     }
     
     .resize-handle:hover, 
     .resize-handle.active {
-        background-color: #0d6efd;
+        background-color: var(--color-accent);
         opacity: 0.4;
     }
     
@@ -162,14 +203,21 @@
         margin-top: 5px;
         padding: 5px;
         font-size: 0.85rem;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border);
         border-radius: 0.25rem;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+    }
+    
+    .column-filter::placeholder {
+        color: var(--color-text-secondary);
     }
     
     /* Scroll container for wide tables */
     .table-container {
         width: 100%;
         overflow-x: auto;
+        background-color: var(--color-bg-primary);
     }
     
     /* Width for common columns */
@@ -184,12 +232,41 @@
         min-width: 80px;
         max-width: 80px;
     }
+    
+    /* Modal tables in dark mode */
+    .modal-body .table-responsive .table {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+    }
+    
+    .modal-body .table-responsive .table th {
+        background-color: var(--color-bg-secondary) !important;
+        color: var(--color-text-emphasis);
+        border-color: var(--color-border);
+    }
+    
+    .modal-body .table-responsive .table td {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        border-color: var(--color-border);
+    }
+    
+    /* Tab content background */
+    .tab-content {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+    }
+    
+    .tab-pane {
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card shadow">
-    <div class="card-header" style="background-color: var(--color-accent); color: white; border-color: var(--color-accent);" d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background-color: var(--color-accent); color: white; border-color: var(--color-accent);">
         <h2 class="mb-0">
             <i class="fas fa-chart-bar me-2"></i>Analysis Results
             {% if session.get('analysis_timestamp') %}
@@ -203,7 +280,7 @@
             <button id="downloadSelectedBtn" class="btn ms-2" style="background-color: transparent; color: white; border-color: white;" disabled>
                 <i class="fas fa-file-export me-1"></i> Download Selected
             </button>
-            <button id="clearBtn" class="btn ms-2" style="background-color: transparent; color: white; border-color: white;">
+            <button id="clearBtn" class="btn ms-2" style="background-color: #dc3545; color: white; border-color: #dc3545; font-weight: 600; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);">
                 <i class="fas fa-trash me-1"></i> Clear Results
             </button>
         </div>
@@ -214,16 +291,16 @@
             <h5>
                 {% if analysis_type == 'pubmed' %}
                 <i class="fas fa-search me-2"></i>PubMed Analysis Results
-                <small class="text-muted">Query: {{ query }}</small>
+                {% if query %}<small class="text-muted">Query: {{ query }}</small>{% endif %}
                 {% else %}
                 <i class="fas fa-file-pdf me-2"></i>PDF Analysis Results
                 {% endif %}
             </h5>
             <p class="mb-0">
                 {% if analysis_type == 'pubmed' %}
-                Results from PubMed search with max {{ max_results }} results.
+                Results from PubMed search{% if max_results %} with max {{ max_results }} results{% endif %}.
                 {% else %}
-                Results from PDF analysis {% if use_ocr %}with OCR enabled ({{ language }}){% endif %}.
+                Results from PDF analysis{% if use_ocr and language %} with OCR enabled ({{ language }}){% endif %}.
                 {% endif %}
             </p>
         </div>
@@ -231,13 +308,32 @@
         <!-- Progress bar for new analyses -->
         {% if is_new_analysis %}
         <div id="analysisProgress" class="mb-4">
-            <div class="progress mt-3" style="height: 25px;">
-                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-            </div>
-            
-            <div class="d-flex justify-content-between mt-2">
-                <span id="progressText">Starting analysis...</span>
-                <span id="progressCount">0/0</span>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Analysis Progress
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span id="progressText">Starting analysis...</span>
+                                <span id="progressCount">0/0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small">
+                                <div id="currentPaper">Current: -</div>
+                                <div id="eta">ETA: Calculating...</div>
+                                <div id="speed">Speed: - papers/min</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -251,7 +347,7 @@
             </button>
         </div>
         
-        <div id="resultsContainer" class="mt-4" {% if is_new_analysis %}style="display: none;"{% endif %}>
+        <div id="resultsContainer" class="mt-4" {% if is_new_analysis %}style="display: none;"{% endif %} data-is-new-analysis="{{ 'true' if is_new_analysis else 'false' }}"></div>
             <!-- Empty state message -->
             <div id="emptyState" class="text-center p-5 bg-light rounded d-none">
                 <i class="fas fa-search fa-3x text-muted mb-3"></i>
@@ -286,11 +382,11 @@
 </div>
 
 <!-- Confirmation modal for clearing results -->
-<div class="modal fade" id="clearConfirmModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="clearConfirmModal" tabindex="-1" aria-labelledby="clearConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="clearConfirmModalLabel">
                     <i class="fas fa-exclamation-triangle me-2"></i>Confirm Clear
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -314,69 +410,162 @@
 <script src="https://unpkg.com/jsuites/dist/jsuites.js"></script>
 
 <script>
+    // ============================================================
+    // CLARA Analysis Flow - Simplified and Debuggable
+    // ============================================================
+    
     $(document).ready(function() {
+        console.log('[CLARA] Page loaded, initializing...');
+        
         let resultsData = [];
         let selectedRows = new Set();
         let grid = null;
         let columnFilters = {};
+        // Determine if this is a new analysis based on the server-side variable
+        let isNewAnalysis = document.getElementById('resultsContainer').getAttribute('data-is-new-analysis') === 'true';
+        let progressInterval = null;
         
-        // For new analysis, start it
-        {% if is_new_analysis %}
-        startAnalysis();
-        {% else %}
-        // For existing results, load them directly
-        loadResults();
-        {% endif %}
+        console.log('[CLARA] isNewAnalysis:', isNewAnalysis);
         
-        // Start the analysis process
+        // ============================================================
+        // STEP 1: Decide whether to start new analysis or load existing
+        // ============================================================
+        if (isNewAnalysis) {
+            console.log('[CLARA] Starting new analysis...');
+            startAnalysis();
+        } else {
+            console.log('[CLARA] Loading existing results...');
+            loadResults();
+        }
+        
+        // ============================================================
+        // STEP 2: Start Analysis - POST to /api/start-analysis
+        // ============================================================
         function startAnalysis() {
+            console.log('[CLARA] startAnalysis() called');
+            
+            // Update UI
+            updateProgress(5, 'Starting analysis...', 'Initializing...');
+            
+            // Log the URL we're about to call
+            const analysisUrl = '{{ url_for("main.start_analysis") }}';
+            console.log('[CLARA] Calling POST:', analysisUrl);
+            
+            // Start polling for progress
+            startProgressPolling();
+            
+            // Make the analysis request
             $.ajax({
-                url: '{{ url_for("main.start_analysis") }}',
+                url: analysisUrl,
                 type: 'POST',
-                success: function(response) {
-                    checkStatus();
+                timeout: 600000, // 10 minute timeout
+                beforeSend: function(xhr) {
+                    console.log('[CLARA] AJAX request starting...');
                 },
-                error: function(error) {
-                    $('#progressText').text('Error: ' + error.responseJSON.message);
-                    $('#progressBar').addClass('bg-danger');
+                success: function(response) {
+                    console.log('[CLARA] Analysis response:', response);
+                    stopProgressPolling();
+                    handleAnalysisComplete(response);
+                },
+                error: function(xhr, status, error) {
+                    console.error('[CLARA] Analysis error:', status, error);
+                    console.error('[CLARA] XHR response:', xhr.responseText);
+                    stopProgressPolling();
+                    handleAnalysisError(xhr, status, error);
                 }
             });
         }
         
-        // Check analysis status
-        function checkStatus() {
-            $.ajax({
-                url: '{{ url_for("main.analysis_status") }}',
-                type: 'GET',
-                success: function(response) {
-                    if (response.status === 'completed') {
-                        $('#progressBar').css('width', '100%');
-                        $('#progressBar').removeClass('progress-bar-animated');
-                        $('#progressText').text('Analysis completed!');
-                        $('#progressCount').text(response.count + '/' + response.count);
+        // ============================================================
+        // STEP 3: Progress Polling - GET /api/analysis-status
+        // ============================================================
+        function startProgressPolling() {
+            console.log('[CLARA] Starting progress polling...');
+            
+            progressInterval = setInterval(function() {
+                $.ajax({
+                    url: '{{ url_for("main.analysis_status") }}',
+                    type: 'GET',
+                    success: function(response) {
+                        console.log('[CLARA] Progress update:', response);
                         
-                        // Enable download button
-                        $('#downloadAllBtn').prop('disabled', false);
-                        
-                        // Load results
-                        loadResults();
-                    } else {
-                        // Update progress based on count of processed items
-                        const processed = response.count || 0;
-                        const percentage = response.total ? Math.round((processed / response.total) * 100) : 0;
-                        $('#progressBar').css('width', Math.max(5, percentage) + '%');
-                        $('#progressText').text('Processing...');
-                        $('#progressCount').text(processed + (response.total ? '/' + response.total : ''));
-                        
-                        // Check again in 2 seconds
-                        setTimeout(checkStatus, 2000);
+                        if (response.status === 'completed') {
+                            stopProgressPolling();
+                            updateProgress(100, 'Analysis completed successfully!', response.count + ' papers analyzed');
+                            $('#progressBar').removeClass('progress-bar-animated').addClass('bg-success');
+                            $('#downloadAllBtn').prop('disabled', false);
+                            setTimeout(loadResults, 500);
+                        } else if (response.status === 'error') {
+                            stopProgressPolling();
+                            updateProgress(100, 'Error during analysis', '');
+                            $('#progressBar').removeClass('progress-bar-animated').addClass('bg-danger');
+                            setTimeout(loadResults, 1000);
+                        } else if (response.status === 'running') {
+                            const pct = response.progress_percent || 10;
+                            const text = response.total > 0 
+                                ? `${response.progress} / ${response.total} papers`
+                                : 'Processing...';
+                            updateProgress(pct, 'Analyzing papers...', text);
+                        }
+                        // If status is 'pending', keep waiting
+                    },
+                    error: function(xhr, status, error) {
+                        console.warn('[CLARA] Progress poll error:', error);
+                        // Continue polling even on error
                     }
-                },
-                error: function() {
-                    $('#progressText').text('Error checking status');
-                    $('#progressBar').addClass('bg-danger');
-                }
-            });
+                });
+            }, 2000);
+        }
+        
+        function stopProgressPolling() {
+            if (progressInterval) {
+                console.log('[CLARA] Stopping progress polling');
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+        
+        // ============================================================
+        // STEP 4: Handle Analysis Completion
+        // ============================================================
+        function handleAnalysisComplete(response) {
+            if (response.status === 'completed' || response.status === 'success') {
+                updateProgress(100, 'Analysis completed successfully!', (response.count || 0) + ' papers analyzed');
+                $('#progressBar').removeClass('progress-bar-animated').addClass('bg-success');
+                $('#downloadAllBtn').prop('disabled', false);
+                setTimeout(loadResults, 500);
+            } else {
+                updateProgress(100, 'Error: ' + (response.message || 'Unknown error'), '');
+                $('#progressBar').removeClass('progress-bar-animated').addClass('bg-danger');
+            }
+        }
+        
+        function handleAnalysisError(xhr, status, error) {
+            let errorMessage = 'Error during analysis';
+            
+            if (status === 'timeout') {
+                errorMessage = 'Analysis timed out. Please try with fewer papers.';
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            } else if (error) {
+                errorMessage = error;
+            }
+            
+            console.error('[CLARA] Error message:', errorMessage);
+            updateProgress(100, 'Error: ' + errorMessage, '');
+            $('#progressBar').removeClass('progress-bar-animated').addClass('bg-danger');
+            
+            // Still try to load any results we might have
+            setTimeout(loadResults, 1000);
+        }
+        
+        // ============================================================
+        // Helper: Update Progress Bar
+        // ============================================================
+        function updateProgress(percent, text, count) {
+            $('#progressBar').css('width', percent + '%');
+            $('#progressText').text(text);
+            $('#progressCount').text(count);
         }
         
         // Load results data
@@ -397,10 +586,10 @@
                         $('#resultsContainer').show();
                     }
                     
-                    {% if is_new_analysis %}
-                    // Hide progress bar for completed analysis
-                    $('#analysisProgress').hide();
-                    {% endif %}
+                    // Hide progress bar for completed analysis if this was a new analysis
+                    if (isNewAnalysis) {
+                        $('#analysisProgress').hide();
+                    }
                 },
                 error: function() {
                     $('#progressText').text('Error loading results');
@@ -571,17 +760,17 @@
                                     type: 'checkbox',
                                     className: 'form-check-input select-row',
                                     'data-index': index,
-                                    onClick: (e) => {
-                                        if (e.target.checked) {
-                                            selectedRows.add(index);
-                                        } else {
-                                            selectedRows.delete(index);
-                                            // Uncheck "select all" if needed
-                                            const selectAllCheckbox = document.getElementById('selectAll');
-                                            if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                                        }
-                                        updateSelectionUI();
-                                    }
+                    onclick: (e) => {
+                        if (e.target.checked) {
+                            selectedRows.add(index);
+                        } else {
+                            selectedRows.delete(index);
+                            // Uncheck "select all" if needed
+                            const selectAllCheckbox = document.getElementById('selectAll');
+                            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                        }
+                        updateSelectionUI();
+                    }
                                 })
                             ]);
                         }
@@ -674,7 +863,7 @@
                                 className: 'btn btn-sm btn-primary view-details',
                                 'data-index': index,
                                 title: 'View Details',
-                                onClick: () => showResultDetails(resultsData[index])
+                                onclick: () => showResultDetails(resultsData[index])
                             }, [
                                 gridjs.h('i', { className: 'fas fa-eye' })
                             ]);
@@ -921,7 +1110,7 @@
             for (let key in result) {
                 if (result.hasOwnProperty(key) && key !== 'Error') {
                     content += '<tr>' +
-                              '<th style="width: 30%; background-color: #f8f9fa;">' + key + '</th>' +
+                              '<th style="width: 30%; background-color: var(--color-bg-secondary);">' + key + '</th>' +
                               '<td>' + (result[key] || '') + '</td>' +
                               '</tr>';
                 }

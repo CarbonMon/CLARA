@@ -9,6 +9,9 @@ import io
 import pandas as pd
 from datetime import datetime
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
 
@@ -55,13 +58,65 @@ def settings():
         else:
             flash(f'API Key Invalid: {error}', 'danger')
     
+    # Check for .env file configuration and auto-configure if available
+    from dotenv import load_dotenv
+    import os
+    
+    load_dotenv()
+    
+    # Auto-detect API keys from .env (only non-empty keys)
+    openai_key = os.environ.get('OPENAI_KEY', '').strip()
+    anthropic_key = os.environ.get('ANTHROPIC_KEY', '').strip()
+    
+    # If keys are in .env and no session configuration exists, auto-configure
+    # Check Anthropic first if it's available (based on .env MODEL setting)
+    if (openai_key or anthropic_key) and not session.get('api_key_valid'):
+        # Determine preferred provider from .env MODEL setting
+        model_setting = os.environ.get('MODEL', '').lower()
+        prefer_anthropic = 'anthropic' in model_setting or 'claude' in model_setting or 'haiku' in model_setting
+        
+        # Try preferred provider first
+        if prefer_anthropic and anthropic_key:
+            is_valid, error = validate_anthropic_api_key(anthropic_key)
+            if is_valid:
+                session['api_provider'] = 'anthropic'
+                session['api_key'] = anthropic_key
+                session['model'] = current_app.config['DEFAULT_CLAUDE_MODEL']
+                session['api_key_valid'] = True
+                flash('Auto-configured Anthropic API settings from .env file!', 'success')
+                return redirect(url_for('main.index'))
+        
+        # Try OpenAI if available
+        if openai_key:
+            is_valid, error = validate_openai_api_key(openai_key)
+            if is_valid:
+                session['api_provider'] = 'openai'
+                session['api_key'] = openai_key
+                session['model'] = current_app.config['DEFAULT_OPENAI_MODEL']
+                session['api_key_valid'] = True
+                flash('Auto-configured OpenAI API settings from .env file!', 'success')
+                return redirect(url_for('main.index'))
+        
+        # Fallback to Anthropic if OpenAI wasn't preferred but Anthropic is available
+        if not prefer_anthropic and anthropic_key:
+            is_valid, error = validate_anthropic_api_key(anthropic_key)
+            if is_valid:
+                session['api_provider'] = 'anthropic'
+                session['api_key'] = anthropic_key
+                session['model'] = current_app.config['DEFAULT_CLAUDE_MODEL']
+                session['api_key_valid'] = True
+                flash('Auto-configured Anthropic API settings from .env file!', 'success')
+                return redirect(url_for('main.index'))
+    
     # Pre-fill form with session data if available
     if 'api_provider' in session:
         form.api_provider.data = session.get('api_provider')
     if 'model' in session:
         form.model.data = session.get('model')
     
-    return render_template('settings.html', form=form)
+    return render_template('settings.html', form=form, 
+                         openai_key_available=bool(openai_key),
+                         anthropic_key_available=bool(anthropic_key))
 
 @bp.route('/pubmed-search', methods=['GET', 'POST'])
 def pubmed_search():
@@ -75,12 +130,42 @@ def pubmed_search():
     if form.validate_on_submit():
         # Store search parameters in session
         session['query'] = form.query.data
-        session['max_results'] = form.max_results.data
+        session['search_mode'] = form.search_mode.data
+        
+        # Set max_results based on search mode
+        if form.search_mode.data == 'full':
+            # For full analysis, we'll use a large number (10000) to get all results
+            session['max_results'] = 10000
+        else:
+            # For partial analysis, use the user-specified max_results
+            session['max_results'] = form.max_results.data
         
         # Redirect to results page which will handle the analysis
         return redirect(url_for('main.analyze_pubmed'))
     
     return render_template('pubmed_search.html', form=form)
+
+@bp.route('/api/pubmed-count')
+def pubmed_count():
+    """API endpoint to get PubMed paper count for a query"""
+    query = request.args.get('query', '').strip()
+    
+    if not query:
+        return jsonify({'status': 'error', 'message': 'No query provided'}), 400
+    
+    try:
+        from app.utils.pubmed_utils import get_pubmed_count
+        # Add clinical trial filter to match what will actually be analyzed
+        query_with_filter = query + " AND (clinicaltrial[filter])"
+        count = get_pubmed_count(query_with_filter)
+        
+        if count is None:
+            return jsonify({'status': 'error', 'message': 'Unable to retrieve paper count'}), 500
+        
+        return jsonify({'status': 'success', 'count': count})
+    except Exception as e:
+        logger.error(f"PubMed count error: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @bp.route('/analyze-pubmed')
 def analyze_pubmed():
@@ -184,12 +269,34 @@ def view_results():
 
 @bp.route('/api/start-analysis', methods=['POST'])
 def start_analysis():
-    """API endpoint to start the analysis process"""
-    # Check if API settings are valid
+    """
+    API endpoint to start the analysis process
+    
+    Flow:
+    1. Validate session has API key
+    2. Get analysis type (pubmed or pdf)
+    3. Create AI client (OpenAI or Claude)
+    4. Run analysis
+    5. Store results in session
+    """
+    logger.info("=== START ANALYSIS CALLED ===")
+    
+    # Step 1: Validate API settings
     if not session.get('api_key_valid'):
+        logger.error("API key not valid in session")
         return jsonify({'status': 'error', 'message': 'API key not configured'}), 400
     
     analysis_type = session.get('analysis_type')
+    logger.info(f"Analysis type: {analysis_type}")
+    logger.info(f"Session keys: {list(session.keys())}")
+    
+    # Step 2: Initialize progress tracking
+    session['progress'] = 0
+    session['total_papers'] = 0
+    session['analysis_status'] = 'running'
+    session['current_paper'] = ''
+    import time
+    session['start_time'] = time.time()
     
     # Create analysis service
     if session['api_provider'] == 'openai':
@@ -213,7 +320,7 @@ def start_analysis():
             
             # Start PubMed analysis
             results = analysis_service.analyze_pubmed_papers(
-                session['query'] + " AND (clinicaltrial[filter]", 
+                session['query'] + " AND (clinicaltrial[filter])", 
                 session['max_results'],
                 action="new"
             )
@@ -221,6 +328,10 @@ def start_analysis():
         elif analysis_type == 'pdf':
             # Get PDF files from session
             pdf_files = session.get('pdf_files', [])
+            
+            # Initialize total for PDF analysis
+            session['total_papers'] = len(pdf_files)
+            session['progress'] = 0
             
             # Start PDF analysis
             results = analysis_service.analyze_pdf_files(
@@ -232,14 +343,21 @@ def start_analysis():
         else:
             return jsonify({'status': 'error', 'message': 'Invalid analysis type'}), 400
         
-        # Store results in session
+        # Store results in session and mark as completed
         session['analysis_results'] = [result for result in results]
         session['analysis_status'] = 'completed'
+        session['progress'] = len(results)
         session['analysis_timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        return jsonify({'status': 'success', 'message': 'Analysis completed'})
+        return jsonify({
+            'status': 'completed',
+            'message': 'Analysis completed',
+            'count': len(results)
+        })
     
     except Exception as e:
+        session['analysis_status'] = 'error'
+        logger.error(f"Analysis error: {e}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @bp.route('/api/analysis-status')
@@ -247,12 +365,48 @@ def analysis_status():
     """API endpoint to check analysis status"""
     status = session.get('analysis_status', 'unknown')
     results = session.get('analysis_results', [])
+    progress = session.get('progress', 0)
+    total_papers = session.get('total_papers', 0)
     
     return jsonify({
         'status': status,
         'completed': status == 'completed',
-        'count': len(results) if results else 0
+        'count': len(results) if results else 0,
+        'progress': progress,
+        'total': total_papers,
+        'progress_percent': int((progress / total_papers) * 100) if total_papers > 0 else 0
     })
+
+@bp.route('/api/analysis-progress')
+def analysis_progress():
+    """API endpoint to get detailed progress information"""
+    progress = session.get('progress', 0)
+    total_papers = session.get('total_papers', 0)
+    current_paper = session.get('current_paper', '')
+    status = session.get('analysis_status', 'unknown')
+    
+    return jsonify({
+        'progress': progress,
+        'total': total_papers,
+        'progress_percent': int((progress / total_papers) * 100) if total_papers > 0 else 0,
+        'current_paper': current_paper,
+        'status': status,
+        'eta': calculate_eta(progress, total_papers, session.get('start_time'))
+    })
+
+def calculate_eta(progress, total, start_time):
+    """Calculate estimated time remaining"""
+    if not start_time or progress == 0 or progress >= total:
+        return None
+    
+    try:
+        import time
+        elapsed = time.time() - start_time
+        rate = progress / elapsed
+        remaining = (total - progress) / rate
+        return int(remaining)
+    except:
+        return None
 
 @bp.route('/api/results')
 def get_results():

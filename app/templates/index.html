@@ -43,17 +43,17 @@
                 <p>Choose one of the options below to begin analyzing clinical research:</p>
 
                 <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin: 24px 0;">
-                    <a href="{{ url_for('main.pubmed_search') }}" class="card" style="text-decoration: none; color: inherit;">
+                    <a href="{{ url_for('main.pubmed_search') }}" class="card" style="text-decoration: none; color: var(--color-text-primary); transition: transform 0.2s, box-shadow 0.2s;">
                         <div class="card-body" style="text-align: center;">
                             <h3 style="color: var(--color-link); margin-bottom: 8px;">🔍 PubMed Search</h3>
-                            <p>Search and analyze clinical trials from the PubMed database using AI-powered extraction.</p>
+                            <p style="color: var(--color-text-primary);">Search and analyze clinical trials from the PubMed database using AI-powered extraction.</p>
                         </div>
                     </a>
 
-                    <a href="{{ url_for('main.pdf_upload') }}" class="card" style="text-decoration: none; color: inherit;">
+                    <a href="{{ url_for('main.pdf_upload') }}" class="card" style="text-decoration: none; color: var(--color-text-primary); transition: transform 0.2s, box-shadow 0.2s;">
                         <div class="card-body" style="text-align: center;">
                             <h3 style="color: var(--color-link); margin-bottom: 8px;">📄 PDF Upload</h3>
-                            <p>Upload clinical trial PDFs for comprehensive AI analysis and parameter extraction.</p>
+                            <p style="color: var(--color-text-primary);">Upload clinical trial PDFs for comprehensive AI analysis and parameter extraction.</p>
                         </div>
                     </a>
                 </div>

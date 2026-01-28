@@ -1,5 +1,9 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
     # Flask configuration
@@ -23,7 +27,7 @@ class Config:
         "claude-3-haiku-20240307": "Claude 3 Haiku"
     }
     DEFAULT_OPENAI_MODEL = "gpt-4o"
-    DEFAULT_CLAUDE_MODEL = "claude-3-sonnet-20240229"
+    DEFAULT_CLAUDE_MODEL = "claude-3-haiku-20240307"
     MAX_PUBMED_RESULTS = 400
     DEFAULT_PUBMED_RESULTS = 20
     SUPPORTED_LANGUAGES = {
